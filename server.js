@@ -33,6 +33,7 @@ app.get("/", (req, res) => {
 		currencyCode,
 		cycleStart: start.format("YYYY-MM-DD"),
 		cycleEnd: end.format("YYYY-MM-DD"),
+		cycleEndHuman: end.format("D [of] MMMM"),
 	});
 });
 

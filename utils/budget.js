@@ -26,9 +26,10 @@ function sumPurchasesInRange(purchases, start, end) {
 
 function formatCurrency(amount, currencyCode) {
 	try {
-		return new Intl.NumberFormat(undefined, { style: "currency", currency: currencyCode }).format(amount);
+		return new Intl.NumberFormat(undefined, { style: "currency", currency: currencyCode, maximumFractionDigits: 0}).format(amount);
 	} catch (_e) {
-		return `${amount.toFixed(2)} ${currencyCode}`;
+		var number = String(Math.floor(amount));
+		return `${number} ${currencyCode}`;
 	}
 }
 

@@ -2,7 +2,7 @@
 html, body { height: 100%; }
 body {
 	margin: 0;
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	background: #0f172a;
 	color: #e2e8f0;
 }
@@ -46,6 +46,14 @@ body {
 	text-decoration: none;
 }
 .btn.secondary { background: transparent; color: #e2e8f0; }
+
+/* Equal-sized, extra-bold hero lines on the main screen */
+.hero-line {
+	font-size: 38px;
+	font-weight: 800;
+	letter-spacing: 0.5px;
+	margin: 6px 0;
+}
 
 form { display: grid; gap: 14px; }
 label { font-size: 14px; opacity: 0.85; }
