@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Add Spend</title>
+	<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+	<div class="container">
+		<div class="card">
+			<h1 class="title">Add spend</h1>
+			<form action="/spend" method="post">
+				<div>
+					<label for="amount">Amount (<%= currencyCode %>)</label>
+					<input id="amount" name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required />
+				</div>
+				<div>
+					<label for="date">Date</label>
+					<input id="date" name="date" type="date" value="<%= defaultDate %>" required />
+				</div>
+				<div>
+					<label for="description">Description (optional)</label>
+					<textarea id="description" name="description" rows="2" placeholder="What did you buy?"></textarea>
+				</div>
+				<div class="actions">
+					<a class="btn secondary" href="/">Cancel</a>
+					<button class="btn" type="submit">Add spend</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

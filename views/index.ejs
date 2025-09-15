@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Purchase Tracker</title>
+	<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+	<div class="container">
+		<div class="card center">
+			<p class="title">Budget left this cycle</p>
+			<div class="amount">
+				<span id="masked" style="cursor:pointer">***</span>
+				<span id="revealed" class="hidden" style="cursor:pointer"><%= budgetLeftFormatted %></span>
+			</div>
+			<p class="subtle">Cycle: <%= cycleStart %> → <%= cycleEnd %></p>
+			<div class="actions">
+				<a class="btn" href="/spend">Add spend</a>
+			</div>
+		</div>
+		<p class="footer">Currency: <%= currencyCode %></p>
+	</div>
+	<script src="/main.js"></script>
+</body>
+</html>
