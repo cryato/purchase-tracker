@@ -12,14 +12,15 @@
 <body>
 	<div class="container">
 		<div class="card center">
-			<div class="hero-line">You have</div>
+			<div class="hero-line">Saved</div>
 			<div class="hero-line">
-				<span id="masked" style="cursor:pointer">* * *</span>
-				<span id="revealed" class="hidden" style="cursor:pointer"><%= budgetLeftFormatted %></span>
+				<span id="masked" style="cursor:pointer"><span class="gradiented">* * *</span></span>
+				<span id="revealed" class="hidden" style="cursor:pointer"><span class="gradiented"><%= allowedByTodayFormatted %></span></span>
 			</div>
 			<!-- <div class="hero-line">Till <%= cycleEndHuman %></div> -->
+			<br>
 			<div class="actions">
-				<a class="btn" href="/spend">Add spend</a>
+				<a class="btn" href="/spend">Spend</a>
 			</div>
 		</div>
 	</div>

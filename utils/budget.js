@@ -28,9 +28,27 @@ function formatCurrency(amount, currencyCode) {
 	try {
 		return new Intl.NumberFormat(undefined, { style: "currency", currency: currencyCode, maximumFractionDigits: 0}).format(amount);
 	} catch (_e) {
-		var number = String(Math.floor(amount));
-		return `${number} ${currencyCode}`;
+		return `${amount.toFixed(2)} ${currencyCode}`;
 	}
 }
 
-module.exports = { getCurrentCycle, sumPurchasesInRange, formatCurrency };
+function countDaysInclusive(start, end) {
+	const startDay = start.startOf("day");
+	const endDay = end.startOf("day");
+	return endDay.diff(startDay, "day") + 1;
+}
+
+function computeAllowanceToDate(today, startDayOfMonth, totalBudget) {
+	const { start, end } = getCurrentCycle(today, startDayOfMonth);
+	const daysInCycle = countDaysInclusive(start, end);
+	const dailyBudget = totalBudget / daysInCycle;
+	// clamp today within cycle
+	let clampedToday = today;
+	if (today.isBefore(start)) clampedToday = start;
+	if (today.isAfter(end)) clampedToday = end;
+	const daysElapsed = countDaysInclusive(start, clampedToday);
+	const allowedByToday = dailyBudget * daysElapsed;
+	return { start, end, daysInCycle, dailyBudget, daysElapsed, allowedByToday };
+}
+
+module.exports = { getCurrentCycle, sumPurchasesInRange, formatCurrency, computeAllowanceToDate };

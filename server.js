@@ -4,7 +4,7 @@ const path = require("path");
 const express = require("express");
 const dayjs = require("dayjs");
 const { budgetStartDay, monthlyBudget, currencyCode } = require("./config");
-const { getCurrentCycle, sumPurchasesInRange, formatCurrency } = require("./utils/budget");
+const { getCurrentCycle, sumPurchasesInRange, formatCurrency, computeAllowanceToDate } = require("./utils/budget");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +27,9 @@ app.get("/", (req, res) => {
 	const spent = sumPurchasesInRange(purchases, start, end);
 	const budgetLeft = monthlyBudget - spent;
 
+	const { daysInCycle, dailyBudget, daysElapsed, allowedByToday } = computeAllowanceToDate(today, budgetStartDay, monthlyBudget);
+	const haveToDate = allowedByToday - spent; // could be negative if overspent relative to schedule
+
 	res.render("index", {
 		budgetLeft,
 		budgetLeftFormatted: formatCurrency(budgetLeft, currencyCode),
@@ -34,6 +37,15 @@ app.get("/", (req, res) => {
 		cycleStart: start.format("YYYY-MM-DD"),
 		cycleEnd: end.format("YYYY-MM-DD"),
 		cycleEndHuman: end.format("D [of] MMMM"),
+		// Equal-per-day schedule metrics
+		daysInCycle,
+		dailyBudget,
+		dailyBudgetFormatted: formatCurrency(dailyBudget, currencyCode),
+		daysElapsed,
+		allowedByToday,
+		allowedByTodayFormatted: formatCurrency(allowedByToday, currencyCode),
+		haveToDate,
+		haveToDateFormatted: formatCurrency(haveToDate, currencyCode),
 	});
 });
 
