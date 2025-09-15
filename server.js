@@ -28,7 +28,10 @@ app.get("/", (req, res) => {
 	const budgetLeft = monthlyBudget - spent;
 
 	const { daysInCycle, dailyBudget, daysElapsed, allowedByToday } = computeAllowanceToDate(today, budgetStartDay, monthlyBudget);
-	const haveToDate = allowedByToday - spent; // could be negative if overspent relative to schedule
+	// Only consider purchases up to today for the "allowed by today" number
+	const spentToDate = sumPurchasesInRange(purchases, start, today);
+	const allowedByTodayNet = allowedByToday - spentToDate;
+	const haveToDate = allowedByTodayNet; // alias for clarity in templates
 
 	res.render("index", {
 		budgetLeft,
@@ -42,8 +45,13 @@ app.get("/", (req, res) => {
 		dailyBudget,
 		dailyBudgetFormatted: formatCurrency(dailyBudget, currencyCode),
 		daysElapsed,
-		allowedByToday,
-		allowedByTodayFormatted: formatCurrency(allowedByToday, currencyCode),
+		// Scheduled vs net allowed-by-today
+		allowedByTodaySchedule: allowedByToday,
+		allowedByTodayScheduleFormatted: formatCurrency(allowedByToday, currencyCode),
+		spentToDate,
+		spentToDateFormatted: formatCurrency(spentToDate, currencyCode),
+		allowedByToday: allowedByTodayNet,
+		allowedByTodayFormatted: formatCurrency(allowedByTodayNet, currencyCode),
 		haveToDate,
 		haveToDateFormatted: formatCurrency(haveToDate, currencyCode),
 	});
