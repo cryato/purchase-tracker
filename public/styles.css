@@ -53,7 +53,6 @@ body {
 	font-weight: 800;
 	letter-spacing: 0.5px;
 	margin: 6px 0;
-	/* font-style: italic; */
 }
 
 /* .gradiented {
@@ -70,6 +69,11 @@ body {
 		color: transparent;
 	}
   }
+
+  .below-actions { margin-top: 8px;
+	position: absolute;
+	bottom: 10%;
+	width: 100%;}
 
 form { display: grid; gap: 14px; }
 label { font-size: 14px; opacity: 0.85; }
