@@ -43,8 +43,8 @@ app.get("/", (req, res) => {
     const weeklySpentToDate = sumPurchasesInRange(purchases, wStart, today);
     const weeklyAllowedByTodayNet = weeklyAllowance.allowedByToday - weeklySpentToDate;
 
-    // Build icon-based progress representation (12 fixed slots)
-    const totalIcons = 12;
+    // Build icon-based progress representation (10 fixed base slots)
+    const totalIcons = 10;
     const usedRatio = Math.max(0, Math.min(1, weeklySpentTotal / Math.max(1, weeklyBudget)));
     let usedIcons = Math.round(usedRatio * totalIcons);
 
@@ -76,16 +76,16 @@ app.get("/", (req, res) => {
     }
     const emptyIcons = Math.max(0, totalIcons - usedIcons);
 
-    // Overspend devil icons beyond budget
+    // Overspend devil icons beyond budget in 10% increments
     const overspend = Math.max(0, weeklySpentTotal - weeklyBudget);
-    const devilIconsTotal = overspend > 0 ? Math.ceil((overspend / Math.max(1, weeklyBudget)) * totalIcons) : 0;
+    const devilIconsTotal = overspend > 0 ? Math.ceil((overspend / Math.max(1, weeklyBudget)) * 10) : 0; // 1 per 10%
+    const firstRowDevils = Math.min(2, devilIconsTotal); // allow up to 2 devils on the first row
     const weeklyDevilRows = [];
-    if (devilIconsTotal > 0) {
-        let remaining = devilIconsTotal;
+    if (devilIconsTotal > 2) {
+        let remaining = devilIconsTotal - 2;
         while (remaining > 0) {
-            const rowDevils = Math.min(totalIcons, remaining);
-            const rowEmpties = Math.max(0, totalIcons - rowDevils);
-            weeklyDevilRows.push({ devils: rowDevils, empties: rowEmpties });
+            const rowDevils = Math.min(12, remaining); // subsequent rows show up to 12 devils, no empties
+            weeklyDevilRows.push({ devils: rowDevils });
             remaining -= rowDevils;
         }
     }
@@ -130,6 +130,7 @@ app.get("/", (req, res) => {
         weeklyUsedFormatted: `${formatCurrency(weeklySpentTotal, currencyCode)} / ${formatCurrency(weeklyBudget, currencyCode)} used`,
         weeklyIcons: { totalIcons, bigIcons, smallIcons, emptyIcons },
         weeklyDevilRows,
+        firstRowDevils,
         weeklyStatusLine: statusLine,
         weeklyAllowedByTodayNet: weeklyAllowedByTodayNet,
 	});
