@@ -36,7 +36,8 @@ app.get("/", (req, res) => {
 
     // Weekly summary metrics
     const { start: wStart, end: wEnd } = getCurrentWeek(today, weekStartDayOfWeek);
-    const weeklySpentDetailed = sumWeeklyPurchasesDetailed(purchases, wStart, wEnd, bigPurchaseThreshold);
+    const dynamicBigThreshold = (typeof weeklyBudget === "number" ? weeklyBudget : 0) * 0.25;
+    const weeklySpentDetailed = sumWeeklyPurchasesDetailed(purchases, wStart, wEnd, dynamicBigThreshold);
     const weeklySpentTotal = weeklySpentDetailed.total;
     const weeklyLeft = weeklyBudget - weeklySpentTotal;
     const weeklyAllowance = computeWeeklyAllowanceToDate(today, weekStartDayOfWeek, weeklyBudget);
