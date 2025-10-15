@@ -19,6 +19,32 @@
 			</div>
 			<!-- <div class="hero-line">Till <%= cycleEndHuman %></div> -->
 		</div>
+
+		<div class="card">
+			<div class="title">Your week so far</div>
+			<div class="amount" style="font-size:28px; margin: 8px 0 16px;">
+				<%= weeklyUsedFormatted %>
+			</div>
+			<div class="weekly-progress" aria-label="Weekly spend progress">
+				<span class="icons">
+					<% for (let i = 0; i < weeklyIcons.bigIcons; i++) { %>
+						<span class="icon big" title="Big purchase">💳</span>
+					<% } %>
+					<% for (let i = 0; i < weeklyIcons.smallIcons; i++) { %>
+						<span class="icon small" title="Small purchase">🪙</span>
+					<% } %>
+					<% for (let i = 0; i < weeklyIcons.emptyIcons; i++) { %>
+						<span class="icon empty" aria-hidden="true">○</span>
+					<% } %>
+				</span>
+			</div>
+			<div class="subtle" style="margin-top:12px">
+				<%= weeklyStatusLine %>
+			</div>
+			<div class="actions" style="margin-top:16px">
+				<a class="btn secondary" id="view-daily-details" href="/details">View daily details</a>
+			</div>
+		</div>
 		<div class="below-actions center">
 			<a class="btn" href="/spend">Spend</a>
 		</div>

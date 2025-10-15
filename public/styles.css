@@ -91,3 +91,11 @@ input:focus, textarea:focus, select:focus { outline: 2px solid #0ea5e9; }
 .footer { margin-top: 8px; font-size: 12px; opacity: 0.6; text-align: center; }
 
 .hidden { display: none; }
+
+/* Weekly summary */
+.weekly-progress { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.weekly-progress .icons { display: inline-flex; gap: 4px; flex-wrap: nowrap; }
+.weekly-progress .icon { font-size: 20px; line-height: 1; }
+.weekly-progress .icon.big { filter: hue-rotate(270deg) saturate(120%); }
+.weekly-progress .icon.small { opacity: 0.9; }
+.weekly-progress .icon.empty { opacity: 0.35; }
