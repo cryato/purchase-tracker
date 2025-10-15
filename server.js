@@ -43,12 +43,37 @@ app.get("/", (req, res) => {
     const weeklySpentToDate = sumPurchasesInRange(purchases, wStart, today);
     const weeklyAllowedByTodayNet = weeklyAllowance.allowedByToday - weeklySpentToDate;
 
-    // Build icon-based progress representation (max 13 icons as per example)
-    const totalIcons = 13;
-    const usedRatio = Math.max(0, Math.min(1, weeklySpentTotal / weeklyBudget));
-    const usedIcons = Math.round(usedRatio * totalIcons);
-    const bigIcons = Math.min(usedIcons, Math.round((weeklySpentDetailed.bigTotal / Math.max(1, weeklyBudget)) * totalIcons));
-    const smallIcons = Math.max(0, usedIcons - bigIcons);
+    // Build icon-based progress representation (10 fixed slots)
+    const totalIcons = 10;
+    const usedRatio = Math.max(0, Math.min(1, weeklySpentTotal / Math.max(1, weeklyBudget)));
+    let usedIcons = Math.round(usedRatio * totalIcons);
+
+    // Distribute used icons between big/small proportionally to their share of weekly spend
+    let bigIcons = 0;
+    let smallIcons = 0;
+    if (weeklySpentTotal > 0) {
+        if (weeklySpentDetailed.smallTotal > 0 && usedIcons === 0) {
+            // Ensure at least one icon if there are small purchases at all
+            usedIcons = 1;
+        }
+        const bigShare = weeklySpentDetailed.bigTotal / weeklySpentTotal;
+        bigIcons = Math.round(usedIcons * bigShare);
+        smallIcons = Math.max(0, usedIcons - bigIcons);
+        // Guarantee at least one small icon when there are small purchases
+        if (weeklySpentDetailed.smallTotal > 0 && smallIcons === 0) {
+            if (bigIcons > 0) {
+                bigIcons -= 1;
+                smallIcons = 1;
+            } else if (usedIcons < totalIcons) {
+                usedIcons += 1;
+                smallIcons = 1;
+            } else {
+                // Edge case: all icons used by big; force swap one to small
+                smallIcons = 1;
+                bigIcons = Math.max(0, usedIcons - smallIcons);
+            }
+        }
+    }
     const emptyIcons = Math.max(0, totalIcons - usedIcons);
 
     // Status line
