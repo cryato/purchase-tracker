@@ -99,3 +99,5 @@ input:focus, textarea:focus, select:focus { outline: 2px solid #0ea5e9; }
 .weekly-progress .icon.big { filter: none; }
 .weekly-progress .icon.small { opacity: 0.9; }
 .weekly-progress .icon.empty { opacity: 0.35; }
+.weekly-progress .icon.devil { filter: none; }
+.weekly-overspend { margin-top: 10px; display: grid; gap: 6px; }

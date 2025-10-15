@@ -43,8 +43,8 @@ app.get("/", (req, res) => {
     const weeklySpentToDate = sumPurchasesInRange(purchases, wStart, today);
     const weeklyAllowedByTodayNet = weeklyAllowance.allowedByToday - weeklySpentToDate;
 
-    // Build icon-based progress representation (10 fixed slots)
-    const totalIcons = 10;
+    // Build icon-based progress representation (12 fixed slots)
+    const totalIcons = 12;
     const usedRatio = Math.max(0, Math.min(1, weeklySpentTotal / Math.max(1, weeklyBudget)));
     let usedIcons = Math.round(usedRatio * totalIcons);
 
@@ -76,16 +76,32 @@ app.get("/", (req, res) => {
     }
     const emptyIcons = Math.max(0, totalIcons - usedIcons);
 
+    // Overspend devil icons beyond budget
+    const overspend = Math.max(0, weeklySpentTotal - weeklyBudget);
+    const devilIconsTotal = overspend > 0 ? Math.ceil((overspend / Math.max(1, weeklyBudget)) * totalIcons) : 0;
+    const weeklyDevilRows = [];
+    if (devilIconsTotal > 0) {
+        let remaining = devilIconsTotal;
+        while (remaining > 0) {
+            const rowDevils = Math.min(totalIcons, remaining);
+            const rowEmpties = Math.max(0, totalIcons - rowDevils);
+            weeklyDevilRows.push({ devils: rowDevils, empties: rowEmpties });
+            remaining -= rowDevils;
+        }
+    }
+
     // Status line
     const bigCount = weeklySpentDetailed.bigCount;
     const smallCount = weeklySpentDetailed.smallCount;
     let statusTail;
+    let overBudgetExplanation = "";
     if (weeklyLeft >= 0) {
         statusTail = `on track, ${formatCurrency(weeklyLeft, currencyCode)} left`;
     } else {
         statusTail = `${formatCurrency(Math.abs(weeklyLeft), currencyCode)} over budget`;
+        overBudgetExplanation = " — 👹 means we’re over budget";
     }
-    const statusLine = `${bigCount} big (🌚) + ${smallCount} small (🌝) purchases — ${statusTail}`;
+    const statusLine = `${bigCount} big (🌚) + ${smallCount} small (🌝) purchases — ${statusTail}${overBudgetExplanation}`;
 
     res.render("index", {
 		budgetLeft,
@@ -113,6 +129,7 @@ app.get("/", (req, res) => {
         weeklySpentTotal,
         weeklyUsedFormatted: `${formatCurrency(weeklySpentTotal, currencyCode)} / ${formatCurrency(weeklyBudget, currencyCode)} used`,
         weeklyIcons: { totalIcons, bigIcons, smallIcons, emptyIcons },
+        weeklyDevilRows,
         weeklyStatusLine: statusLine,
         weeklyAllowedByTodayNet: weeklyAllowedByTodayNet,
 	});
