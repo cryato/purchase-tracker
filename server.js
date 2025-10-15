@@ -85,7 +85,7 @@ app.get("/", (req, res) => {
     } else {
         statusTail = `${formatCurrency(Math.abs(weeklyLeft), currencyCode)} over budget`;
     }
-    const statusLine = `${bigCount} big + ${smallCount} small purchases — ${statusTail}`;
+    const statusLine = `${bigCount} big (🌚) + ${smallCount} small (🌝) purchases — ${statusTail}`;
 
     res.render("index", {
 		budgetLeft,
