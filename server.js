@@ -193,6 +193,31 @@ app.post("/setup-workspace", requireAuth, async (req, res) => {
     }
 });
 
+// Settings
+app.get("/settings", requireAuth, requireWorkspace, (req, res) => {
+    res.render("settings", { weeklyBudget: req.workspace.weeklyBudget, currency: req.workspace.currency });
+});
+
+app.post("/settings", requireAuth, requireWorkspace, async (req, res) => {
+    const weekly = Number((req.body.weeklyBudget || "").toString());
+    const curr = (req.body.currency || "").toString().trim().toUpperCase();
+    if (!Number.isFinite(weekly) || weekly <= 0 || !curr) return res.redirect("/settings");
+    try {
+        await db.collection("workspaces").doc(req.workspace.id).update({
+            weeklyBudget: weekly,
+            currency: curr,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        // Update attached workspace to reflect new settings immediately
+        req.workspace.weeklyBudget = weekly;
+        req.workspace.currency = curr;
+    } catch (_e) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to update settings", _e);
+    }
+    res.redirect("/");
+});
+
 app.get("/", requireAuth, requireWorkspace, async (req, res) => {
     const ws = req.workspace;
     const wsCurrency = (ws && ws.currency) || currencyCode;

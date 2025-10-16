@@ -3,4 +3,22 @@ document.addEventListener("DOMContentLoaded", () => {
 	if (viewDetails) {
 		// Allow normal navigation to /details
 	}
+
+    const burger = document.getElementById("burger");
+    const menu = document.getElementById("menu");
+    if (burger && menu) {
+        const hide = () => { menu.classList.add("hidden"); burger.setAttribute("aria-expanded", "false"); };
+        const toggle = () => {
+            const open = menu.classList.contains("hidden");
+            if (open) {
+                menu.classList.remove("hidden");
+                burger.setAttribute("aria-expanded", "true");
+            } else {
+                hide();
+            }
+        };
+        burger.addEventListener("click", (e) => { e.stopPropagation(); toggle(); });
+        document.addEventListener("click", () => hide());
+        menu.addEventListener("click", (e) => e.stopPropagation());
+    }
 });

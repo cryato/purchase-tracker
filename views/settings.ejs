@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Settings</title>
+    <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="title">Settings</h1>
+            <form action="/settings" method="post">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div>
+                    <label for="weeklyBudget">Weekly budget</label>
+                    <input id="weeklyBudget" name="weeklyBudget" type="number" step="0.01" inputmode="decimal" value="<%= weeklyBudget %>" required />
+                </div>
+                <div>
+                    <label for="currency">Currency code</label>
+                    <input id="currency" name="currency" type="text" value="<%= currency %>" required />
+                </div>
+                <div class="actions">
+                    <a class="btn secondary" href="/">Cancel</a>
+                    <button class="btn" type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+
+

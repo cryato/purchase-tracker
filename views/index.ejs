@@ -11,15 +11,20 @@
 </head>
 <body>
 	<div class="container">
-		<div style="display:flex; justify-content:flex-end; margin: 8px 0; gap:8px; align-items:center;">
+		<div style="display:flex; justify-content:flex-end; margin: 8px 0; gap:8px; align-items:center; position:relative;">
 			<% if (user) { %>
 				<span class="subtle"><%= user.email %></span>
-				<form action="/sessionLogout" method="post" style="display:inline">
-					<input type="hidden" name="_csrf" value="<%= csrfToken %>">
-					<button class="btn secondary" type="submit">Logout</button>
-				</form>
+				<button id="burger" class="icon-button" aria-haspopup="menu" aria-expanded="false" title="Menu">☰</button>
+				<div id="menu" class="menu hidden" role="menu" aria-labelledby="burger">
+					<a class="menu-item" href="/settings" role="menuitem">Settings</a>
+					<form action="/sessionLogout" method="post" style="display:block" role="none">
+						<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+						<button class="menu-item" type="submit" role="menuitem">Logout</button>
+					</form>
+				</div>
 			<% } else { %>
-				<a class="btn" href="/login">Login</a>
+				<!-- Keep login accessible but not as a bright button -->
+				<a class="link subtle" href="/login">Login</a>
 			<% } %>
 		</div>
 

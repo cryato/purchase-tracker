@@ -101,3 +101,37 @@ input:focus, textarea:focus, select:focus { outline: 2px solid #0ea5e9; }
 .weekly-progress .icon.empty { opacity: 0.35; }
 .weekly-progress .icon.devil { filter: none; }
 .weekly-overspend { margin-top: 10px; display: grid; gap: 6px; }
+
+/* Burger/menu */
+.icon-button {
+    appearance: none;
+    border: 1px solid #334155;
+    background: #0b1220;
+    color: #e2e8f0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 16px;
+}
+.link { color: #a3b3c2; text-decoration: none; }
+.menu {
+    position: absolute;
+    top: 36px;
+    right: 0;
+    background: #0b1220;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    min-width: 160px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    display: grid;
+}
+.menu-item {
+    display: block;
+    padding: 10px 12px;
+    color: #e2e8f0;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+.menu-item:hover { background: #0f172a; }
