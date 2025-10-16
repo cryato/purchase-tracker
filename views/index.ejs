@@ -11,7 +11,17 @@
 </head>
 <body>
 	<div class="container">
-
+		<div style="display:flex; justify-content:flex-end; margin: 8px 0; gap:8px; align-items:center;">
+			<% if (user) { %>
+				<span class="subtle"><%= user.email %></span>
+				<form action="/sessionLogout" method="post" style="display:inline">
+					<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+					<button class="btn secondary" type="submit">Logout</button>
+				</form>
+			<% } else { %>
+				<a class="btn" href="/login">Login</a>
+			<% } %>
+		</div>
 
 		<div class="card">
 			<div class="title">Your week so far</div>

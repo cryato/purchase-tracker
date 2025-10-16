@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css" />
+    <meta name="csrf-token" content="<%= csrfToken %>">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="title">Sign in</h1>
+            <div id="firebaseui-auth-container"></div>
+            <div class="actions" style="margin-top:16px">
+                <a class="btn secondary" href="/">Back</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs (compat for FirebaseUI) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
+    <script>
+        // TODO: replace with your Firebase web config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAnKpw39f9CyY0o7NJLoAJ56CFhmdxVEHM",
+            authDomain: "savings-saas.firebaseapp.com",
+            projectId: "savings-saas",
+            storageBucket: "savings-saas.firebasestorage.app",
+            messagingSenderId: "880769861429",
+            appId: "1:880769861429:web:dcdd3f1c70a722f5b42e7c"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const ui = new firebaseui.auth.AuthUI(firebase.auth());
+        ui.start('#firebaseui-auth-container', {
+            signInOptions: [
+                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+                firebase.auth.EmailAuthProvider.PROVIDER_ID,
+            ],
+            callbacks: {
+                signInSuccessWithAuthResult: async (authResult) => {
+                    const idToken = await authResult.user.getIdToken();
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                    await fetch('/sessionLogin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken,
+                        },
+                        body: JSON.stringify({ idToken }),
+                    });
+                    window.location.assign('/');
+                    return false;
+                },
+            },
+        });
+    </script>
+</body>
+</html>
+
+

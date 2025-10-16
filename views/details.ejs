@@ -28,7 +28,8 @@
 								<div class="subtle"><%= item.description || "—" %></div>
 							</div>
 							<a class="btn secondary" href="/edit/<%= item.id %>">Edit</a>
-							<form action="/delete/<%= item.id %>" method="post" style="margin:0">
+						<form action="/delete/<%= item.id %>" method="post" style="margin:0">
+							<input type="hidden" name="_csrf" value="<%= csrfToken %>">
 								<button class="btn" type="submit">Delete</button>
 							</form>
 						</div>

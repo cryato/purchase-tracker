@@ -11,6 +11,7 @@
 		<div class="card">
 			<h1 class="title">Edit purchase</h1>
 			<form action="/edit/<%= purchase.id %>" method="post">
+				<input type="hidden" name="_csrf" value="<%= csrfToken %>">
 				<div>
 					<label for="amount">Amount (<%= currencyCode %>)</label>
 					<input id="amount" name="amount" type="number" step="0.01" inputmode="decimal" value="<%= purchase.amount %>" required />
