@@ -37,6 +37,7 @@
         const ui = new firebaseui.auth.AuthUI(firebase.auth());
         ui.start('#firebaseui-auth-container', {
             credentialHelper: firebaseui.auth.CredentialHelper.NONE,
+            signInFlow: 'popup',
             signInOptions: [
                 {
                     provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
@@ -62,6 +63,7 @@
                     return false;
                 },
                 signInFailure: function(error) {
+                    console.error('FirebaseUI sign-in failure:', error);
                     alert(error && error.message ? error.message : 'Authentication failed.');
                     return Promise.resolve();
                 },
