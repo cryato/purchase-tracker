@@ -195,7 +195,7 @@ app.post("/setup-workspace", requireAuth, async (req, res) => {
 
 // Settings
 app.get("/settings", requireAuth, requireWorkspace, (req, res) => {
-    res.render("settings", { weeklyBudget: req.workspace.weeklyBudget, currency: req.workspace.currency });
+    res.render("settings", { user: req.user, weeklyBudget: req.workspace.weeklyBudget, currency: req.workspace.currency });
 });
 
 app.post("/settings", requireAuth, requireWorkspace, async (req, res) => {
@@ -318,6 +318,7 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
     const statusLine = `${bigCount} big (🌚) + ${smallCount} small (🌝) purchases — ${statusTail}${overBudgetExplanation}`;
 
     res.render("index", {
+        user: req.user,
         budgetLeft,
         budgetLeftFormatted: formatCurrency(budgetLeft, wsCurrency),
         currencyCode: wsCurrency,
@@ -350,7 +351,7 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
 app.get("/spend", requireAuth, requireWorkspace, (req, res) => {
 	const defaultDate = dayjs().format("YYYY-MM-DD");
     const wsCurrency = (req.workspace && req.workspace.currency) || currencyCode;
-    res.render("spend", { defaultDate, currencyCode: wsCurrency });
+    res.render("spend", { user: req.user, defaultDate, currencyCode: wsCurrency });
 });
 
 app.post("/spend", requireAuth, requireWorkspace, async (req, res) => {
@@ -415,7 +416,7 @@ app.get("/details", requireAuth, requireWorkspace, async (req, res) => {
             };
         });
 
-    res.render("details", { days, currencyCode: wsCurrency });
+    res.render("details", { user: req.user, days, currencyCode: wsCurrency });
 });
 
 // Edit purchase page
@@ -427,7 +428,7 @@ app.get("/edit/:id", requireAuth, requireWorkspace, async (req, res) => {
         const p = { id: doc.id, ...doc.data() };
         if (p.workspaceId !== req.workspace.id) return res.redirect("/details");
         const wsCurrency = (req.workspace && req.workspace.currency) || currencyCode;
-        res.render("edit", { purchase: p, currencyCode: wsCurrency });
+        res.render("edit", { user: req.user, purchase: p, currencyCode: wsCurrency });
     } catch (_e) {
         // eslint-disable-next-line no-console
         console.error("Failed to load purchase for edit", _e);
