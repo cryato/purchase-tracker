@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Register</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <meta name="csrf-token" content="<%= csrfToken %>">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="title">Create account</h1>
+            <form id="register-form" onsubmit="return false;">
+                <div>
+                    <label for="email">Email</label>
+                    <input id="email" type="email" required />
+                </div>
+                <div>
+                    <label for="password">Password</label>
+                    <input id="password" type="password" minlength="6" required />
+                </div>
+                <div class="actions" style="margin-top:16px">
+                    <a class="btn secondary" href="/login">Back to login</a>
+                    <button class="btn" id="register-btn" type="submit">Register</button>
+                </div>
+                <div id="error" class="subtle" style="color:#f87171; margin-top:8px"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script>
+        // Use the same config as login.ejs
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        document.getElementById('register-form').addEventListener('submit', async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const errBox = document.getElementById('error');
+            errBox.textContent = '';
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                const idToken = await cred.user.getIdToken();
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                await fetch('/sessionLogin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken,
+                    },
+                    body: JSON.stringify({ idToken }),
+                });
+                window.location.assign('/');
+            } catch (e) {
+                errBox.textContent = e && e.message ? e.message : 'Registration failed';
+            }
+        });
+    </script>
+</body>
+</html>
+
+
