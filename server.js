@@ -136,12 +136,6 @@ app.post("/sessionLogout", (req, res) => {
     res.redirect("/login");
 });
 
-// Registration page (public)
-app.get("/register", (req, res) => {
-    if (req.user) return res.redirect("/");
-    res.render("register");
-});
-
 app.get("/", requireAuth, (req, res) => {
 	const today = dayjs();
 	const { start, end } = getCurrentCycle(today, budgetStartDay);

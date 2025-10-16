@@ -11,11 +11,10 @@
 <body>
     <div class="container">
         <div class="card">
-            <h1 class="title">Sign in</h1>
+            <h1 class="title">Sign in or create account</h1>
             <div id="firebaseui-auth-container"></div>
             <div class="actions" style="margin-top:16px">
                 <a class="btn secondary" href="/">Back</a>
-                <a class="btn" href="/register">Register</a>
             </div>
         </div>
     </div>
@@ -37,9 +36,15 @@
         firebase.initializeApp(firebaseConfig);
         const ui = new firebaseui.auth.AuthUI(firebase.auth());
         ui.start('#firebaseui-auth-container', {
+            credentialHelper: firebaseui.auth.CredentialHelper.NONE,
             signInOptions: [
+                {
+                    provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+                    signInMethod: firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD,
+                    requireDisplayName: false,
+                    disableSignUp: { status: false },
+                },
                 firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-                firebase.auth.EmailAuthProvider.PROVIDER_ID,
             ],
             callbacks: {
                 signInSuccessWithAuthResult: async (authResult) => {
@@ -55,6 +60,10 @@
                     });
                     window.location.assign('/');
                     return false;
+                },
+                signInFailure: function(error) {
+                    alert(error && error.message ? error.message : 'Authentication failed.');
+                    return Promise.resolve();
                 },
             },
         });
