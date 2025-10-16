@@ -23,7 +23,8 @@ app.use((req, res, next) => {
 	const forwardedProto = (req.headers["x-forwarded-proto"] || "").toString().split(",")[0].trim();
 	if (forwardedProto === "https") return next();
 	const host = req.headers.host || req.get("host") || req.hostname;
-	return res.redirect(301, `https://${host}${req.originalUrl}`);
+	// Use 308 to preserve method and body across redirect (important for POST/PUT)
+	return res.redirect(308, `https://${host}${req.originalUrl}`);
 });
 
 // Initialize Firebase Admin (supports FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS)
