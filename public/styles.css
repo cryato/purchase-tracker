@@ -123,6 +123,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid #0ea5e9; }
     min-width: 160px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     display: grid;
+    z-index: 1000;
 }
 .menu-item {
     display: block;
