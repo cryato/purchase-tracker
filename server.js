@@ -44,6 +44,12 @@ if (!__adminInitialized) {
 	}
 }
 
+// Log project info for diagnostics
+try {
+    // eslint-disable-next-line no-console
+    console.log("Firebase Admin initialized. Project:", (admin.app().options && (admin.app().options.projectId || (admin.app().options.credential && admin.app().options.credential.projectId))) || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || "<unknown>");
+} catch (_e) { /* noop */ }
+
 // Firestore handle
 const db = admin.firestore();
 
@@ -142,6 +148,8 @@ app.post("/sessionLogin", async (req, res) => {
         });
         res.status(200).json({ status: "ok" });
     } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("/sessionLogin failed:", (e && e.code) || e);
         res.status(401).json({ error: "unauthorized" });
     }
 });
@@ -179,6 +187,8 @@ app.post("/setup-workspace", requireAuth, async (req, res) => {
         req.workspace = { id: ref.id, ...wsDoc };
         res.redirect("/");
     } catch (_e) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to create workspace", _e);
         res.status(500).send("Failed to create workspace");
     }
 });
@@ -339,7 +349,8 @@ app.post("/spend", requireAuth, requireWorkspace, async (req, res) => {
             createdAt: now,
         });
     } catch (_e) {
-        // ignore errors for now
+        // eslint-disable-next-line no-console
+        console.error("Failed to add purchase", _e);
     }
     res.redirect("/");
 });
@@ -393,6 +404,8 @@ app.get("/edit/:id", requireAuth, requireWorkspace, async (req, res) => {
         const wsCurrency = (req.workspace && req.workspace.currency) || currencyCode;
         res.render("edit", { purchase: p, currencyCode: wsCurrency });
     } catch (_e) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to load purchase for edit", _e);
         res.redirect("/details");
     }
 });
@@ -417,7 +430,8 @@ app.post("/edit/:id", requireAuth, requireWorkspace, async (req, res) => {
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
     } catch (_e) {
-        // ignore
+        // eslint-disable-next-line no-console
+        console.error("Failed to update purchase", _e);
     }
     res.redirect("/details");
 });
@@ -432,7 +446,8 @@ app.post("/delete/:id", requireAuth, requireWorkspace, async (req, res) => {
             await docRef.delete();
         }
     } catch (_e) {
-        // ignore
+        // eslint-disable-next-line no-console
+        console.error("Failed to delete purchase", _e);
     }
     res.redirect("/details");
 });
