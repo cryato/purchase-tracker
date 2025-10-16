@@ -13,6 +13,19 @@ const { getCurrentCycle, sumPurchasesInRange, formatCurrency, computeAllowanceTo
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Enforce HTTPS in production (supports reverse proxies like Heroku/Render)
+app.set("trust proxy", 1);
+app.use((req, res, next) => {
+	if (process.env.NODE_ENV !== "production") return next();
+	// If already secure, continue
+	if (req.secure) return next();
+	// Respect X-Forwarded-Proto header added by proxies
+	const forwardedProto = (req.headers["x-forwarded-proto"] || "").toString().split(",")[0].trim();
+	if (forwardedProto === "https") return next();
+	const host = req.headers.host || req.get("host") || req.hostname;
+	return res.redirect(301, `https://${host}${req.originalUrl}`);
+});
+
 // Initialize Firebase Admin (supports FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS)
 let __adminInitialized = false;
 try {
