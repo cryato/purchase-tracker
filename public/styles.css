@@ -136,3 +136,6 @@ input:focus, textarea:focus, select:focus { outline: 2px solid #0ea5e9; }
     text-align: left;
 }
 .menu-item:hover { background: #0f172a; }
+
+/* Ensure hidden state wins over .menu display */
+.menu.hidden { display: none; }
