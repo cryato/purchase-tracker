@@ -13,9 +13,8 @@
 	<div class="container">
 		<div style="display:flex; justify-content:flex-end; margin: 8px 0; gap:8px; align-items:center; position:relative;">
 			<% if (user) { %>
-				<span class="subtle"><%= user.email %></span>
 				<button id="burger" class="icon-button" aria-haspopup="menu" aria-expanded="false" title="Menu">☰</button>
-				<div id="menu" class="menu hidden" role="menu" aria-labelledby="burger">
+				<div id="menu" class="menu hidden" role="menu" aria-labelledby="burger" aria-hidden="true" inert>
 					<a class="menu-item" href="/settings" role="menuitem">Settings</a>
 					<form action="/sessionLogout" method="post" style="display:block" role="none">
 						<input type="hidden" name="_csrf" value="<%= csrfToken %>">
