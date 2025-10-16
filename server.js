@@ -44,24 +44,36 @@ if (!__adminInitialized) {
 	}
 }
 
-// In-memory store for purchases per user
-// Map<uid, Array<{ id: number, amount: number, date: string, description?: string }>>
-const purchasesByUid = new Map();
-const nextIdByUid = new Map();
+// Firestore handle
+const db = admin.firestore();
 
-function getUserPurchases(req) {
-    const uid = req.user && req.user.uid;
-    if (!uid) return [];
-    if (!purchasesByUid.has(uid)) purchasesByUid.set(uid, []);
-    return purchasesByUid.get(uid);
+// Workspace loader: attach the user's workspace (by membership) to req/res
+async function attachWorkspace(req, _res, next) {
+    if (!req.user) return next();
+    try {
+        const uid = req.user.uid;
+        // Query workspaces where memberUids contains the user
+        const snap = await db
+            .collection("workspaces")
+            .where("memberUids", "array-contains", uid)
+            .limit(1)
+            .get();
+        if (!snap.empty) {
+            const doc = snap.docs[0];
+            req.workspace = { id: doc.id, ...doc.data() };
+        } else {
+            req.workspace = null;
+        }
+    } catch (_e) {
+        req.workspace = null;
+    }
+    next();
 }
 
-function getNextPurchaseId(req) {
-    const uid = req.user && req.user.uid;
-    if (!nextIdByUid.has(uid)) nextIdByUid.set(uid, 1);
-    const next = nextIdByUid.get(uid);
-    nextIdByUid.set(uid, next + 1);
-    return next;
+function requireWorkspace(req, res, next) {
+    if (!req.user) return res.redirect("/login");
+    if (!req.workspace) return res.redirect("/setup-workspace");
+    next();
 }
 
 // View engine and static assets
@@ -101,6 +113,9 @@ app.use(async (req, _res, next) => {
     next();
 });
 
+// Load workspace (if any) after user attach
+app.use(attachWorkspace);
+
 function requireAuth(req, res, next) {
     if (!req.user) return res.redirect("/login");
     next();
@@ -136,46 +151,97 @@ app.post("/sessionLogout", (req, res) => {
     res.redirect("/login");
 });
 
-app.get("/", requireAuth, (req, res) => {
-	const today = dayjs();
-	const { start, end } = getCurrentCycle(today, budgetStartDay);
-	const userPurchases = getUserPurchases(req);
-	const spent = sumPurchasesInRange(userPurchases, start, end);
-	const budgetLeft = monthlyBudget - spent;
+// Workspace setup routes
+app.get("/setup-workspace", requireAuth, (req, res) => {
+    if (req.workspace) return res.redirect("/");
+    res.render("setup", { defaultCurrency: currencyCode, defaultWeekly: weeklyBudget });
+});
 
-	const { daysInCycle, dailyBudget, daysElapsed, allowedByToday } = computeAllowanceToDate(today, budgetStartDay, monthlyBudget);
-	// Only consider purchases up to today for the "allowed by today" number
-	const spentToDate = sumPurchasesInRange(userPurchases, start, today);
-	const allowedByTodayNet = allowedByToday - spentToDate;
-	const haveToDate = allowedByTodayNet; // alias for clarity in templates
+app.post("/setup-workspace", requireAuth, async (req, res) => {
+    if (req.workspace) return res.redirect("/");
+    const uid = req.user.uid;
+    const weekly = Number((req.body.weeklyBudget || "").toString());
+    const curr = (req.body.currency || "").toString().trim().toUpperCase();
+    if (!Number.isFinite(weekly) || weekly <= 0 || !curr) {
+        return res.status(400).send("Invalid input");
+    }
+    try {
+        const now = admin.firestore.FieldValue.serverTimestamp();
+        const wsDoc = {
+            weeklyBudget: weekly,
+            currency: curr,
+            memberUids: [uid],
+            createdAt: now,
+            updatedAt: now,
+        };
+        const ref = await db.collection("workspaces").add(wsDoc);
+        // Attach to request for immediate redirect usage
+        req.workspace = { id: ref.id, ...wsDoc };
+        res.redirect("/");
+    } catch (_e) {
+        res.status(500).send("Failed to create workspace");
+    }
+});
+
+app.get("/", requireAuth, requireWorkspace, async (req, res) => {
+    const ws = req.workspace;
+    const wsCurrency = (ws && ws.currency) || currencyCode;
+    const wsWeeklyBudget = (ws && ws.weeklyBudget) || weeklyBudget;
+
+    const today = dayjs();
+    const { start, end } = getCurrentCycle(today, budgetStartDay);
+
+    // Fetch purchases for monthly cycle
+    const startStr = start.format("YYYY-MM-DD");
+    const endStr = end.format("YYYY-MM-DD");
+    const monthSnap = await db
+        .collection("purchases")
+        .where("workspaceId", "==", ws.id)
+        .where("date", ">=", startStr)
+        .where("date", "<=", endStr)
+        .get();
+    const monthlyPurchases = monthSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const spent = sumPurchasesInRange(monthlyPurchases, start, end);
+    const budgetLeft = monthlyBudget - spent;
+
+    const { daysInCycle, dailyBudget, daysElapsed, allowedByToday } = computeAllowanceToDate(today, budgetStartDay, monthlyBudget);
+    const spentToDate = sumPurchasesInRange(monthlyPurchases, start, today);
+    const allowedByTodayNet = allowedByToday - spentToDate;
+    const haveToDate = allowedByTodayNet;
 
     // Weekly summary metrics
-	const { start: wStart, end: wEnd } = getCurrentWeek(today, weekStartDayOfWeek);
-    const dynamicBigThreshold = (typeof weeklyBudget === "number" ? weeklyBudget : 0) * 0.25;
-	const weeklySpentDetailed = sumWeeklyPurchasesDetailed(userPurchases, wStart, wEnd, dynamicBigThreshold);
+    const { start: wStart, end: wEnd } = getCurrentWeek(today, weekStartDayOfWeek);
+    const wStartStr = wStart.format("YYYY-MM-DD");
+    const wEndStr = wEnd.format("YYYY-MM-DD");
+    const weekSnap = await db
+        .collection("purchases")
+        .where("workspaceId", "==", ws.id)
+        .where("date", ">=", wStartStr)
+        .where("date", "<=", wEndStr)
+        .get();
+    const weeklyPurchases = weekSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const dynamicBigThreshold = (typeof wsWeeklyBudget === "number" ? wsWeeklyBudget : 0) * 0.25;
+    const weeklySpentDetailed = sumWeeklyPurchasesDetailed(weeklyPurchases, wStart, wEnd, dynamicBigThreshold);
     const weeklySpentTotal = weeklySpentDetailed.total;
-    const weeklyLeft = weeklyBudget - weeklySpentTotal;
-    const weeklyAllowance = computeWeeklyAllowanceToDate(today, weekStartDayOfWeek, weeklyBudget);
-	const weeklySpentToDate = sumPurchasesInRange(userPurchases, wStart, today);
+    const weeklyLeft = wsWeeklyBudget - weeklySpentTotal;
+    const weeklyAllowance = computeWeeklyAllowanceToDate(today, weekStartDayOfWeek, wsWeeklyBudget);
+    const weeklySpentToDate = sumPurchasesInRange(weeklyPurchases, wStart, today);
     const weeklyAllowedByTodayNet = weeklyAllowance.allowedByToday - weeklySpentToDate;
 
     // Build icon-based progress representation (10 fixed base slots)
     const totalIcons = 10;
-    const usedRatio = Math.max(0, Math.min(1, weeklySpentTotal / Math.max(1, weeklyBudget)));
+    const usedRatio = Math.max(0, Math.min(1, weeklySpentTotal / Math.max(1, wsWeeklyBudget)));
     let usedIcons = Math.round(usedRatio * totalIcons);
 
-    // Distribute used icons between big/small proportionally to their share of weekly spend
     let bigIcons = 0;
     let smallIcons = 0;
     if (weeklySpentTotal > 0) {
         if (weeklySpentDetailed.smallTotal > 0 && usedIcons === 0) {
-            // Ensure at least one icon if there are small purchases at all
             usedIcons = 1;
         }
         const bigShare = weeklySpentDetailed.bigTotal / weeklySpentTotal;
         bigIcons = Math.round(usedIcons * bigShare);
         smallIcons = Math.max(0, usedIcons - bigIcons);
-        // Guarantee at least one small icon when there are small purchases
         if (weeklySpentDetailed.smallTotal > 0 && smallIcons === 0) {
             if (bigIcons > 0) {
                 bigIcons -= 1;
@@ -184,7 +250,6 @@ app.get("/", requireAuth, (req, res) => {
                 usedIcons += 1;
                 smallIcons = 1;
             } else {
-                // Edge case: all icons used by big; force swap one to small
                 smallIcons = 1;
                 bigIcons = Math.max(0, usedIcons - smallIcons);
             }
@@ -192,100 +257,114 @@ app.get("/", requireAuth, (req, res) => {
     }
     const emptyIcons = Math.max(0, totalIcons - usedIcons);
 
-    // Overspend devil icons beyond budget in 10% increments
-    const overspend = Math.max(0, weeklySpentTotal - weeklyBudget);
-    const devilIconsTotal = overspend > 0 ? Math.ceil((overspend / Math.max(1, weeklyBudget)) * 10) : 0; // 1 per 10%
-    const firstRowDevils = Math.min(2, devilIconsTotal); // allow up to 2 devils on the first row
+    const overspend = Math.max(0, weeklySpentTotal - wsWeeklyBudget);
+    const devilIconsTotal = overspend > 0 ? Math.ceil((overspend / Math.max(1, wsWeeklyBudget)) * 10) : 0;
+    const firstRowDevils = Math.min(2, devilIconsTotal);
     const weeklyDevilRows = [];
     if (devilIconsTotal > 2) {
         let remaining = devilIconsTotal - 2;
         while (remaining > 0) {
-            const rowDevils = Math.min(12, remaining); // subsequent rows show up to 12 devils, no empties
+            const rowDevils = Math.min(12, remaining);
             weeklyDevilRows.push({ devils: rowDevils });
             remaining -= rowDevils;
         }
     }
 
-    // Status line
     const bigCount = weeklySpentDetailed.bigCount;
     const smallCount = weeklySpentDetailed.smallCount;
     let statusTail;
     let overBudgetExplanation = "";
     if (weeklyLeft >= 0) {
-        statusTail = `on track, ${formatCurrency(weeklyLeft, currencyCode)} left`;
+        statusTail = `on track, ${formatCurrency(weeklyLeft, wsCurrency)} left`;
     } else {
-        statusTail = `${formatCurrency(Math.abs(weeklyLeft), currencyCode)} over budget`;
+        statusTail = `${formatCurrency(Math.abs(weeklyLeft), wsCurrency)} over budget`;
         overBudgetExplanation = " — 👹 means we’re over budget";
     }
     const statusLine = `${bigCount} big (🌚) + ${smallCount} small (🌝) purchases — ${statusTail}${overBudgetExplanation}`;
 
-	res.render("index", {
-		budgetLeft,
-		budgetLeftFormatted: formatCurrency(budgetLeft, currencyCode),
-		currencyCode,
-		cycleStart: start.format("YYYY-MM-DD"),
-		cycleEnd: end.format("YYYY-MM-DD"),
-		cycleEndHuman: end.format("D [of] MMMM"),
-		// Equal-per-day schedule metrics
-		daysInCycle,
-		dailyBudget,
-		dailyBudgetFormatted: formatCurrency(dailyBudget, currencyCode),
-		daysElapsed,
-		// Scheduled vs net allowed-by-today
-		allowedByTodaySchedule: allowedByToday,
-		allowedByTodayScheduleFormatted: formatCurrency(allowedByToday, currencyCode),
-		spentToDate,
-		spentToDateFormatted: formatCurrency(spentToDate, currencyCode),
-		allowedByToday: allowedByTodayNet,
-		allowedByTodayFormatted: formatCurrency(allowedByTodayNet, currencyCode),
-		haveToDate,
-		haveToDateFormatted: formatCurrency(haveToDate, currencyCode),
-        // Weekly view props
-        weeklyBudget,
+    res.render("index", {
+        budgetLeft,
+        budgetLeftFormatted: formatCurrency(budgetLeft, wsCurrency),
+        currencyCode: wsCurrency,
+        cycleStart: start.format("YYYY-MM-DD"),
+        cycleEnd: end.format("YYYY-MM-DD"),
+        cycleEndHuman: end.format("D [of] MMMM"),
+        daysInCycle,
+        dailyBudget,
+        dailyBudgetFormatted: formatCurrency(dailyBudget, wsCurrency),
+        daysElapsed,
+        allowedByTodaySchedule: allowedByToday,
+        allowedByTodayScheduleFormatted: formatCurrency(allowedByToday, wsCurrency),
+        spentToDate,
+        spentToDateFormatted: formatCurrency(spentToDate, wsCurrency),
+        allowedByToday: allowedByTodayNet,
+        allowedByTodayFormatted: formatCurrency(allowedByTodayNet, wsCurrency),
+        haveToDate,
+        haveToDateFormatted: formatCurrency(haveToDate, wsCurrency),
+        weeklyBudget: wsWeeklyBudget,
         weeklySpentTotal,
-        weeklyUsedFormatted: `${formatCurrency(weeklySpentTotal, currencyCode)} / ${formatCurrency(weeklyBudget, currencyCode)} used`,
+        weeklyUsedFormatted: `${formatCurrency(weeklySpentTotal, wsCurrency)} / ${formatCurrency(wsWeeklyBudget, wsCurrency)} used`,
         weeklyIcons: { totalIcons, bigIcons, smallIcons, emptyIcons },
         weeklyDevilRows,
         firstRowDevils,
         weeklyStatusLine: statusLine,
         weeklyAllowedByTodayNet: weeklyAllowedByTodayNet,
-	});
+    });
 });
 
-app.get("/spend", requireAuth, (req, res) => {
+app.get("/spend", requireAuth, requireWorkspace, (req, res) => {
 	const defaultDate = dayjs().format("YYYY-MM-DD");
-	res.render("spend", { defaultDate, currencyCode });
+    const wsCurrency = (req.workspace && req.workspace.currency) || currencyCode;
+    res.render("spend", { defaultDate, currencyCode: wsCurrency });
 });
 
-app.post("/spend", requireAuth, (req, res) => {
-	const amount = parseFloat((req.body.amount || "").toString());
-	const dateStr = (req.body.date || "").toString().trim();
-	const description = (req.body.description || "").toString().trim();
-
-    if (Number.isFinite(amount) && amount > 0) {
-		const date = dayjs(dateStr || undefined);
-		const list = getUserPurchases(req);
-		list.push({ id: getNextPurchaseId(req), amount, date: date.format("YYYY-MM-DD"), description });
-	}
-
-	res.redirect("/");
+app.post("/spend", requireAuth, requireWorkspace, async (req, res) => {
+    const amount = parseFloat((req.body.amount || "").toString());
+    const dateStr = (req.body.date || "").toString().trim();
+    const description = (req.body.description || "").toString().trim();
+    if (!Number.isFinite(amount) || amount <= 0) {
+        return res.redirect("/");
+    }
+    try {
+        const date = dayjs(dateStr || undefined).format("YYYY-MM-DD");
+        const now = admin.firestore.FieldValue.serverTimestamp();
+        await db.collection("purchases").add({
+            workspaceId: req.workspace.id,
+            amount,
+            currency: req.workspace.currency || currencyCode,
+            description,
+            rejected: false,
+            date,
+            createdByUid: req.user.uid,
+            createdAt: now,
+        });
+    } catch (_e) {
+        // ignore errors for now
+    }
+    res.redirect("/");
 });
 
 // Daily details (current week)
-app.get("/details", requireAuth, (req, res) => {
+app.get("/details", requireAuth, requireWorkspace, async (req, res) => {
+    const wsCurrency = (req.workspace && req.workspace.currency) || currencyCode;
     const today = dayjs();
     const { start: wStart, end: wEnd } = getCurrentWeek(today, weekStartDayOfWeek);
+    const wStartStr = wStart.format("YYYY-MM-DD");
+    const wEndStr = wEnd.format("YYYY-MM-DD");
+    const snap = await db
+        .collection("purchases")
+        .where("workspaceId", "==", req.workspace.id)
+        .where("date", ">=", wStartStr)
+        .where("date", "<=", wEndStr)
+        .get();
     // Group by date within week
     const byDateMap = new Map();
-	for (const p of getUserPurchases(req)) {
-        const d = dayjs(p.date);
-        if ((d.isAfter(wStart) || d.isSame(wStart, "day")) && (d.isBefore(wEnd) || d.isSame(wEnd, "day"))) {
-            const key = d.format("YYYY-MM-DD");
-            if (!byDateMap.has(key)) byDateMap.set(key, []);
-            byDateMap.get(key).push(p);
-        }
+    for (const d of snap.docs) {
+        const p = { id: d.id, ...d.data() };
+        const key = p.date;
+        if (!byDateMap.has(key)) byDateMap.set(key, []);
+        byDateMap.get(key).push(p);
     }
-    // Build sorted array by date desc
     const days = Array.from(byDateMap.entries())
         .sort((a, b) => (a[0] < b[0] ? 1 : -1))
         .map(([dateStr, items]) => {
@@ -295,44 +374,66 @@ app.get("/details", requireAuth, (req, res) => {
                 dateStr,
                 dayName,
                 dayTotal,
-                dayTotalFormatted: formatCurrency(dayTotal, currencyCode),
+                dayTotalFormatted: formatCurrency(dayTotal, wsCurrency),
                 items,
             };
         });
 
-	res.render("details", { days, currencyCode });
+    res.render("details", { days, currencyCode: wsCurrency });
 });
 
 // Edit purchase page
-app.get("/edit/:id", requireAuth, (req, res) => {
-    const id = Number(req.params.id);
-	const p = getUserPurchases(req).find(x => x.id === id);
-    if (!p) return res.redirect("/details");
-    res.render("edit", { purchase: p, currencyCode });
+app.get("/edit/:id", requireAuth, requireWorkspace, async (req, res) => {
+    const id = req.params.id;
+    try {
+        const doc = await db.collection("purchases").doc(id).get();
+        if (!doc.exists) return res.redirect("/details");
+        const p = { id: doc.id, ...doc.data() };
+        if (p.workspaceId !== req.workspace.id) return res.redirect("/details");
+        const wsCurrency = (req.workspace && req.workspace.currency) || currencyCode;
+        res.render("edit", { purchase: p, currencyCode: wsCurrency });
+    } catch (_e) {
+        res.redirect("/details");
+    }
 });
 
 // Update purchase
-app.post("/edit/:id", requireAuth, (req, res) => {
-    const id = Number(req.params.id);
+app.post("/edit/:id", requireAuth, requireWorkspace, async (req, res) => {
+    const id = req.params.id;
     const amount = parseFloat((req.body.amount || "").toString());
     const dateStr = (req.body.date || "").toString().trim();
     const description = (req.body.description || "").toString().trim();
-	const p = getUserPurchases(req).find(x => x.id === id);
-    if (p && Number.isFinite(amount) && amount > 0) {
-        p.amount = amount;
-        const date = dayjs(dateStr || undefined);
-        p.date = date.format("YYYY-MM-DD");
-        p.description = description;
+    if (!Number.isFinite(amount) || amount <= 0) return res.redirect("/details");
+    try {
+        const docRef = db.collection("purchases").doc(id);
+        const doc = await docRef.get();
+        if (!doc.exists) return res.redirect("/details");
+        const p = doc.data();
+        if (p.workspaceId !== req.workspace.id) return res.redirect("/details");
+        await docRef.update({
+            amount,
+            date: dayjs(dateStr || undefined).format("YYYY-MM-DD"),
+            description,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+    } catch (_e) {
+        // ignore
     }
     res.redirect("/details");
 });
 
 // Delete purchase
-app.post("/delete/:id", requireAuth, (req, res) => {
-    const id = Number(req.params.id);
-	const list = getUserPurchases(req);
-	const idx = list.findIndex(x => x.id === id);
-	if (idx !== -1) list.splice(idx, 1);
+app.post("/delete/:id", requireAuth, requireWorkspace, async (req, res) => {
+    const id = req.params.id;
+    try {
+        const docRef = db.collection("purchases").doc(id);
+        const doc = await docRef.get();
+        if (doc.exists && doc.data().workspaceId === req.workspace.id) {
+            await docRef.delete();
+        }
+    } catch (_e) {
+        // ignore
+    }
     res.redirect("/details");
 });
 

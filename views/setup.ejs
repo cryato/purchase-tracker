@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Setup Workspace</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+        .field { margin: 12px 0; }
+        .field label { display:block; margin-bottom:6px; font-weight:600; }
+        .row { display:flex; gap:12px; align-items:end; }
+    </style>
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <script>
+        // small helper: default currency to user's locale suggestion if empty
+        document.addEventListener('DOMContentLoaded', function() {
+            var input = document.getElementById('currency');
+            if (input && !input.value) {
+                try {
+                    var fmt = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
+                    var opt = fmt.resolvedOptions();
+                    if (opt.currency) input.value = opt.currency;
+                } catch (e) {}
+            }
+        });
+    </script>
+    </head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="title">Create your workspace</h1>
+            <p class="subtle">We’ll use this to calculate your weekly progress.</p>
+            <form action="/setup-workspace" method="post">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+                <div class="field">
+                    <label for="weeklyBudget">Weekly budget</label>
+                    <input id="weeklyBudget" name="weeklyBudget" type="number" step="0.01" inputmode="decimal" placeholder="0.00" value="<%= defaultWeekly %>" required />
+                </div>
+
+                <div class="field">
+                    <label for="currency">Currency code</label>
+                    <input id="currency" name="currency" type="text" placeholder="USD" value="<%= defaultCurrency %>" required />
+                </div>
+
+                <div class="actions">
+                    <a class="btn secondary" href="/">Cancel</a>
+                    <button class="btn" type="submit">Create workspace</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+
+
