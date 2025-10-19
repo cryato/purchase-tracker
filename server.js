@@ -589,14 +589,24 @@ app.post("/delete/:id", requireAuth, requireWorkspace, async (req, res) => {
 // Trash view (show soft-deleted purchases)
 app.get("/trash", requireAuth, requireWorkspace, async (req, res) => {
     try {
+        // Only current week, to minimize data and avoid composite index needs
+        const today = dayjs();
+        const { start: wStart, end: wEnd } = getCurrentWeek(today, weekStartDayOfWeek);
+        const wStartStr = wStart.format("YYYY-MM-DD");
+        const wEndStr = wEnd.format("YYYY-MM-DD");
+
         const snap = await db
             .collection("purchases")
             .where("workspaceId", "==", req.workspace.id)
-            .where("deleted", "==", true)
-            .orderBy("date", "desc")
-            .limit(500)
+            .where("date", ">=", wStartStr)
+            .where("date", "<=", wEndStr)
             .get();
-        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        const items = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(p => p.deleted === true)
+            .sort((a, b) => (a.date < b.date ? 1 : -1));
+
         const wsCurrency = (req.workspace && req.workspace.currency) || currencyCode;
         res.render("trash", { user: req.user, items, currencyCode: wsCurrency });
     } catch (_e) {

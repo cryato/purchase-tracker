@@ -11,6 +11,12 @@
 </head>
 <body>
 	<div class="container">
+		<div style="display:flex; justify-content:flex-end; margin: 8px 0; gap:8px; align-items:center; position:relative;">
+			<button id="burger" class="icon-button" aria-haspopup="menu" aria-expanded="false" title="<%= t('app.menu.menu') %>">☰</button>
+			<div id="menu" class="menu hidden" role="menu" aria-labelledby="burger" aria-hidden="true" inert>
+				<a class="menu-item" href="/trash" role="menuitem"><%= (typeof t === 'function' ? t('trash.show_trash') : 'Show trash') %></a>
+			</div>
+		</div>
 		<div class="card">
 			<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
 				<a class="btn secondary" href="<%= prevUrl %>">◀︎ <span class="hidden-sm"><%= t('details.prev_week') %></span></a>
@@ -54,6 +60,7 @@
 			</div>
 		</div>
 	</div>
+	<script src="/main.js"></script>
 </body>
 </html>
 
