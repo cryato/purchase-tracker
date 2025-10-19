@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 	<title><%= t('setup.title') %></title>
     <link rel="stylesheet" href="/styles.css" />
     <style>
@@ -11,6 +11,9 @@
         .row { display:flex; gap:12px; align-items:end; }
     </style>
     <meta name="csrf-token" content="<%= csrfToken %>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
     <script>
         // small helper: default currency to user's locale suggestion if empty
         document.addEventListener('DOMContentLoaded', function() {

@@ -21,7 +21,7 @@
     "purchases": "{purchaseCount, plural, one{purchase} other{purchases}}",
     "big_purchase": "Big purchase",
     "small_purchase": "Small purchase",
-    "overspend": "Overspend",
+    "overspend": "Over  spend",
     "used_format": "{used} / {total} used",
     "status_on_track": "on track, {left} left",
     "status_over": "{over} over budget",

@@ -9,9 +9,9 @@
     }
   },
   "index": {
-    "week_of": "Неделя {range} сейчас",
-    "week_of_only": "Неделя {range}",
-    "week_of_so_far": "Неделя {range} сейчас",
+    "week_of": "Неделя {range}",
+    "week_of_only": "Неделя {range} (архив)",
+    "week_of_so_far": "Неделя {range}",
     "view_daily_details": "Детали по дням",
     "spend": "Потратить"
   },
