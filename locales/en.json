@@ -91,6 +91,10 @@
     "delete_permanently": "Delete permanently",
     "confirm_delete": "Delete permanently?",
     "back": "Back"
+  },
+  "common": {
+    "copied": "Copied",
+    "click_to_copy": "Click to copy"
   }
 }
 

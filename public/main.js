@@ -31,4 +31,33 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener("click", () => hide());
         menu.addEventListener("click", (e) => e.stopPropagation());
     }
+
+    // Settings: auto-copy and click-to-copy for public link
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const shouldCopy = params.get("copied") === "1";
+        const linkEl = document.getElementById("public-link");
+        const toast = document.getElementById("toast");
+        const showToast = () => {
+            if (!toast) return;
+            toast.classList.remove("hidden");
+            clearTimeout(showToast.__t);
+            showToast.__t = setTimeout(() => toast.classList.add("hidden"), 1200);
+        };
+        async function copyLink() {
+            if (!linkEl) return;
+            const txt = linkEl.textContent || "";
+            if (!txt) return;
+            try {
+                await navigator.clipboard.writeText(txt);
+                showToast();
+            } catch (_e) {}
+        }
+        if (shouldCopy && linkEl) {
+            copyLink();
+        }
+        if (linkEl) {
+            linkEl.addEventListener("click", (e) => { e.preventDefault(); copyLink(); });
+        }
+    } catch (_e) {}
 });

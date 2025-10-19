@@ -115,6 +115,16 @@ function requireWorkspaceAdmin(req, res, next) {
     next();
 }
 
+function generateLowercaseToken(length) {
+    const alphabet = "abcdefghijklmnopqrstuvwxyz";
+    const bytes = crypto.randomBytes(length);
+    let out = "";
+    for (let i = 0; i < length; i++) {
+        out += alphabet[bytes[i] % 26];
+    }
+    return out;
+}
+
 // View engine and static assets
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -298,8 +308,8 @@ app.post("/settings", requireAuth, requireWorkspace, async (req, res) => {
 // Public link management (admin only)
 app.post("/settings/public-link/create", requireAuth, requireWorkspace, requireWorkspaceAdmin, async (req, res) => {
     try {
-        // Generate URL-safe random token that does not reveal workspace id
-        const token = crypto.randomBytes(24).toString("base64url");
+        // Generate simple 12-letter lowercase token (no workspace id leakage)
+        const token = generateLowercaseToken(12);
         await db.collection("workspaces").doc(req.workspace.id).update({
             publicViewToken: token,
             publicViewCreatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -311,7 +321,8 @@ app.post("/settings/public-link/create", requireAuth, requireWorkspace, requireW
         // eslint-disable-next-line no-console
         console.error("Failed to create public link", _e);
     }
-    res.redirect("/settings");
+    // Trigger auto-copy on settings page
+    res.redirect("/settings?copied=1");
 });
 
 app.post("/settings/public-link/revoke", requireAuth, requireWorkspace, requireWorkspaceAdmin, async (req, res) => {

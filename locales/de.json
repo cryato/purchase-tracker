@@ -91,6 +91,10 @@
     "delete_permanently": "Endgültig löschen",
     "confirm_delete": "Endgültig löschen?",
     "back": "Zurück"
+  },
+  "common": {
+    "copied": "Kopiert",
+    "click_to_copy": "Zum Kopieren klicken"
   }
 }
 

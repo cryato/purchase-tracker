@@ -41,7 +41,7 @@
                 <div>
                     <h2 class="title" style="font-size:18px; margin:0 0 8px 0"><%= t('settings.public_link_title') || 'Public read-only link' %></h2>
                     <% if (hasPublicLink) { %>
-                        <p class="subtle" style="word-break:break-all"><%= publicLinkUrl %></p>
+                        <p id="public-link" class="subtle" style="word-break:break-all; cursor:pointer" title="<%= t('common.click_to_copy') || 'Click to copy' %>"><%= publicLinkUrl %></p>
                         <form action="/settings/public-link/revoke" method="post" style="display:inline-block; margin-top:8px">
                             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                             <button class="btn" type="submit"><%= t('settings.public_link_revoke') || 'Revoke link' %></button>
@@ -53,6 +53,9 @@
                         </form>
                     <% } %>
                     <p class="subtle" style="margin-top:8px"><%= t('settings.public_link_help') || 'People with the link can only view the main screen and weekly details. They cannot edit or access trash.' %></p>
+                    <div id="toast" class="toast hidden" role="status" aria-live="polite" style="position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#111827; color:#e5e7eb; padding:8px 12px; border-radius:8px; border:1px solid #374151;">
+                        <%= t('common.copied') || 'Copied' %>
+                    </div>
                 </div>
             <% } %>
             <hr style="border-color:#1f2937; margin:16px 0" />
