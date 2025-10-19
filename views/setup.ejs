@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Setup Workspace</title>
+	<title><%= t('setup.title') %></title>
     <link rel="stylesheet" href="/styles.css" />
     <style>
         .field { margin: 12px 0; }
@@ -28,25 +28,25 @@
 <body>
     <div class="container">
         <div class="card">
-            <h1 class="title">Create your workspace</h1>
-            <p class="subtle">We’ll use this to calculate your weekly progress.</p>
+			<h1 class="title"><%= t('setup.title') %></h1>
+			<p class="subtle"><%= t('setup.subtitle') %></p>
             <form action="/setup-workspace" method="post">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
                 <div class="field">
-                    <label for="weeklyBudget">Weekly budget</label>
+					<label for="weeklyBudget"><%= t('setup.weekly_budget') %></label>
                     <input id="weeklyBudget" name="weeklyBudget" type="number" step="0.01" inputmode="decimal" placeholder="0.00" value="<%= defaultWeekly %>" required />
                 </div>
 
                 <div class="field">
-                    <label for="currency">Currency code</label>
+					<label for="currency"><%= t('setup.currency_code') %></label>
                     <input id="currency" name="currency" type="text" placeholder="USD" value="<%= defaultCurrency %>" required />
                 </div>
 
-                <div class="actions">
-                    <a class="btn secondary" href="/">Cancel</a>
-                    <button class="btn" type="submit">Create workspace</button>
-                </div>
+				<div class="actions">
+					<a class="btn secondary" href="/"><%= t('setup.cancel') %></a>
+					<button class="btn" type="submit"><%= t('setup.create') %></button>
+				</div>
             </form>
         </div>
     </div>

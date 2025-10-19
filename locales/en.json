@@ -2,6 +2,7 @@
   "app": {
     "title": "Purchase Tracker",
     "menu": {
+      "menu": "Menu",
       "settings": "Settings",
       "logout": "Logout",
       "login": "Login"
@@ -9,6 +10,8 @@
   },
   "index": {
     "week_of": "Week of {range} so far",
+    "week_of_only": "Week of {range}",
+    "week_of_so_far": "Week of {range} so far",
     "view_daily_details": "View daily details",
     "spend": "Spend"
   },
@@ -18,16 +21,22 @@
     "big_purchase": "Big purchase",
     "small_purchase": "Small purchase",
     "overspend": "Overspend",
+    "progress_aria": "Weekly spend progress",
+    "overspend_row_aria": "Overspend row",
     "status_on_track": "on track, {left} left",
     "status_over": "{over} over budget",
     "over_explainer": " — 👹 means we’re over budget"
   },
   "details": {
     "title": "This week",
+    "week_of": "Week of {range}",
     "none": "No purchases made — week started!",
     "total": "Total: {amount}",
     "edit": "Edit",
     "delete": "Delete",
+    "prev_week": "Previous week",
+    "next_week": "Next week",
+    "next_week_future": "Next week is in the future",
     "back": "Back",
     "add_spend": "Add spend"
   },

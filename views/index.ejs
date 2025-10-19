@@ -13,48 +13,54 @@
 	<div class="container">
 		<div style="display:flex; justify-content:flex-end; margin: 8px 0; gap:8px; align-items:center; position:relative;">
 			<% if (user) { %>
-				<button id="burger" class="icon-button" aria-haspopup="menu" aria-expanded="false" title="Menu">☰</button>
+				<button id="burger" class="icon-button" aria-haspopup="menu" aria-expanded="false" title="<%= t('app.menu.menu') %>">☰</button>
 				<div id="menu" class="menu hidden" role="menu" aria-labelledby="burger" aria-hidden="true" inert>
-					<a class="menu-item" href="/settings" role="menuitem">Settings</a>
+					<a class="menu-item" href="/settings" role="menuitem"><%= t('app.menu.settings') %></a>
 					<form action="/sessionLogout" method="post" style="display:block" role="none">
 						<input type="hidden" name="_csrf" value="<%= csrfToken %>">
-						<button class="menu-item" type="submit" role="menuitem">Logout</button>
+						<button class="menu-item" type="submit" role="menuitem"><%= t('app.menu.logout') %></button>
 					</form>
 				</div>
 			<% } else { %>
 				<!-- Keep login accessible but not as a bright button -->
-				<a class="link subtle" href="/login">Login</a>
+				<a class="link subtle" href="/login"><%= t('app.menu.login') %></a>
 			<% } %>
 		</div>
 
 		<div class="card">
-			<div class="title">Week of <%= weekRangeHuman %><% if (isCurrentWeek) { %> so far<% } %></div>
+			<div class="title">
+				<% if (isCurrentWeek) { %>
+					<%= t('index.week_of_so_far', { range: weekRangeHuman }) %>
+				<% } else { %>
+					<%= t('index.week_of_only', { range: weekRangeHuman }) %>
+				<% } %>
+			</div>
 			<div class="amount" style="font-size:28px; margin: 8px 0 16px;">
 				<%= weeklyUsedFormatted %>
 			</div>
-			<div class="weekly-progress" aria-label="Weekly spend progress">
+			<div class="weekly-progress" aria-label="<%= t('weekly.progress_aria') %>">
 				<span class="icons">
 					<% for (let i = 0; i < weeklyIcons.bigIcons; i++) { %>
-						<span class="icon big" title="Big purchase">🌚</span>
+						<span class="icon big" title="<%= t('weekly.big_purchase') %>">🌚</span>
 					<% } %>
 					<% for (let i = 0; i < weeklyIcons.smallIcons; i++) { %>
-						<span class="icon small" title="Small purchase">🌝</span>
+						<span class="icon small" title="<%= t('weekly.small_purchase') %>">🌝</span>
 					<% } %>
 					<% for (let i = 0; i < weeklyIcons.emptyIcons; i++) { %>
 						<span class="icon empty" aria-hidden="true">○</span>
 					<% } %>
 					<% for (let i = 0; i < firstRowDevils; i++) { %>
-						<span class="icon devil" title="Overspend">👹</span>
+						<span class="icon devil" title="<%= t('weekly.overspend') %>">👹</span>
 					<% } %>
 				</span>
 			</div>
 			<% if (weeklyDevilRows && weeklyDevilRows.length) { %>
 				<div class="weekly-overspend">
 					<% weeklyDevilRows.forEach(function(row){ %>
-						<div class="weekly-progress" aria-label="Overspend row">
+						<div class="weekly-progress" aria-label="<%= t('weekly.overspend_row_aria') %>">
 							<span class="icons">
 								<% for (let i = 0; i < row.devils; i++) { %>
-									<span class="icon devil" title="Overspend">👹</span>
+									<span class="icon devil" title="<%= t('weekly.overspend') %>">👹</span>
 								<% } %>
 							</span>
 						</div>
@@ -65,11 +71,11 @@
 				<%= weeklyStatusLine %>
 			</div>
 			<div class="actions" style="margin-top:16px">
-				<a class="btn secondary" id="view-daily-details" href="/details">View daily details</a>
+				<a class="btn secondary" id="view-daily-details" href="/details"><%= t('index.view_daily_details') %></a>
 			</div>
 		</div>
 		<div class="below-actions center">
-			<a class="btn" href="/spend">Spend</a>
+			<a class="btn" href="/spend"><%= t('index.spend') %></a>
 		</div>
 	</div>
 	<script src="/main.js"></script>

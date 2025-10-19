@@ -3,30 +3,30 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>Add Spend</title>
+	<title><%= t('spend.title') %></title>
 	<link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
 	<div class="container">
 		<div class="card">
-			<h1 class="title">Add spend</h1>
+			<h1 class="title"><%= t('spend.title') %></h1>
 			<form action="/spend" method="post">
 				<input type="hidden" name="_csrf" value="<%= csrfToken %>">
 				<div>
-					<label for="amount">Amount (<%= currencyCode %>)</label>
+					<label for="amount"><%= t('spend.amount', { currency: currencyCode }) %></label>
 					<input id="amount" name="amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required />
 				</div>
 				<div>
-					<label for="date">Date</label>
+					<label for="date"><%= t('spend.date') %></label>
 					<input id="date" name="date" type="date" value="<%= defaultDate %>" required />
 				</div>
 				<div>
-					<label for="description">Description (optional)</label>
-					<textarea id="description" name="description" rows="2" placeholder="What did you buy?"></textarea>
+					<label for="description"><%= t('spend.description') %></label>
+					<textarea id="description" name="description" rows="2" placeholder="<%= t('spend.description_placeholder') %>"></textarea>
 				</div>
 				<div class="actions">
-					<a class="btn secondary" href="/">Cancel</a>
-					<button class="btn" type="submit">Add spend</button>
+					<a class="btn secondary" href="/"><%= t('spend.cancel') %></a>
+					<button class="btn" type="submit"><%= t('spend.submit') %></button>
 				</div>
 			</form>
 		</div>

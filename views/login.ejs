@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Login</title>
+	<title><%= t('login.title') %></title>
     <link rel="stylesheet" href="/styles.css" />
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css" />
     <meta name="csrf-token" content="<%= csrfToken %>">
@@ -11,10 +11,10 @@
 <body>
     <div class="container">
         <div class="card">
-            <h1 class="title">Sign in or create account</h1>
+			<h1 class="title"><%= t('login.title') %></h1>
             <div id="firebaseui-auth-container"></div>
             <div class="actions" style="margin-top:16px">
-                <a class="btn secondary" href="/">Back</a>
+				<a class="btn secondary" href="/"><%= t('login.back') %></a>
             </div>
         </div>
     </div>

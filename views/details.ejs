@@ -10,22 +10,22 @@
 	<div class="container">
 		<div class="card">
 			<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-				<a class="btn secondary" href="<%= prevUrl %>">◀︎ <span class="hidden-sm">Previous week</span></a>
-				<h1 class="title" style="margin:0; text-align:center; flex:1;">Week of <%= weekRangeHuman %></h1>
+				<a class="btn secondary" href="<%= prevUrl %>">◀︎ <span class="hidden-sm"><%= t('details.prev_week') %></span></a>
+				<h1 class="title" style="margin:0; text-align:center; flex:1;"><%= t('details.week_of', { range: weekRangeHuman }) %></h1>
 				<% if (nextDisabled) { %>
-					<button class="btn secondary" disabled title="Next week is in the future">Next week ▶︎</button>
+					<button class="btn secondary" disabled title="<%= t('details.next_week_future') %>"><%= t('details.next_week') %> ▶︎</button>
 				<% } else { %>
-					<a class="btn secondary" href="<%= nextUrl %>"><span class="hidden-sm">Next week</span> ▶︎</a>
+					<a class="btn secondary" href="<%= nextUrl %>"><span class="hidden-sm"><%= t('details.next_week') %></span> ▶︎</a>
 				<% } %>
 			</div>
 			<% if (days.length === 0) { %>
-				<p class="subtle">No purchases made — week started!</p>
+				<p class="subtle"><%= t('details.none') %></p>
 			<% } %>
 			<% days.forEach(day => { %>
 				<div style="display:flex; justify-content:space-between; align-items:center; margin:12px 0;">
 					<div>
 						<div style="font-weight:700"><%= day.dateStr %> (<%= day.dayName %>)</div>
-						<div class="subtle">Total: <%= day.dayTotalFormatted %></div>
+						<div class="subtle"><%= t('details.total', { amount: day.dayTotalFormatted }) %></div>
 					</div>
 				</div>
 				<div style="display:grid; gap:8px;">
@@ -35,10 +35,10 @@
 								<div style="font-weight:600"><%= (item.amount).toFixed(2) %> <%= currencyCode %></div>
 								<div class="subtle"><%= item.description || "—" %></div>
 							</div>
-							<a class="btn secondary" href="/edit/<%= item.id %>">Edit</a>
+							<a class="btn secondary" href="/edit/<%= item.id %>"><%= t('details.edit') %></a>
 						<form action="/delete/<%= item.id %>" method="post" style="margin:0">
 							<input type="hidden" name="_csrf" value="<%= csrfToken %>">
-								<button class="btn" type="submit">Delete</button>
+								<button class="btn" type="submit"><%= t('details.delete') %></button>
 							</form>
 						</div>
 					<% }) %>
@@ -46,8 +46,8 @@
 				<hr style="border-color:#1f2937; margin:16px 0" />
 			<% }) %>
 			<div class="actions floating-actions">
-				<a class="btn secondary" href="/">Back</a>
-				<a class="btn" href="/spend">Add spend</a>
+				<a class="btn secondary" href="/"><%= t('details.back') %></a>
+				<a class="btn" href="/spend"><%= t('details.add_spend') %></a>
 			</div>
 		</div>
 	</div>

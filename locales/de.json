@@ -2,6 +2,7 @@
   "app": {
     "title": "Ausgaben-Tracker",
     "menu": {
+      "menu": "Menü",
       "settings": "Einstellungen",
       "logout": "Abmelden",
       "login": "Anmelden"
@@ -9,6 +10,8 @@
   },
   "index": {
     "week_of": "Woche vom {range} bisher",
+    "week_of_only": "Woche vom {range}",
+    "week_of_so_far": "Woche vom {range} bisher",
     "view_daily_details": "Tagesdetails ansehen",
     "spend": "Ausgeben"
   },
@@ -18,16 +21,22 @@
     "big_purchase": "Großer Kauf",
     "small_purchase": "Kleiner Kauf",
     "overspend": "Überbudget",
+    "progress_aria": "Wöchentlicher Ausgabenfortschritt",
+    "overspend_row_aria": "Überbudget-Zeile",
     "status_on_track": "im Plan, {left} übrig",
     "status_over": "{over} über Budget",
     "over_explainer": " — 👹 bedeutet über Budget"
   },
   "details": {
     "title": "Diese Woche",
+    "week_of": "Woche vom {range}",
     "none": "Keine Einkäufe — Woche gestartet!",
     "total": "Summe: {amount}",
     "edit": "Bearbeiten",
     "delete": "Löschen",
+    "prev_week": "Vorherige Woche",
+    "next_week": "Nächste Woche",
+    "next_week_future": "Nächste Woche liegt in der Zukunft",
     "back": "Zurück",
     "add_spend": "Ausgabe hinzufügen"
   },
