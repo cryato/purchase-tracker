@@ -37,6 +37,25 @@
 				</div>
             </form>
             <hr style="border-color:#1f2937; margin:16px 0" />
+            <% if (isAdmin) { %>
+                <div>
+                    <h2 class="title" style="font-size:18px; margin:0 0 8px 0"><%= t('settings.public_link_title') || 'Public read-only link' %></h2>
+                    <% if (hasPublicLink) { %>
+                        <p class="subtle" style="word-break:break-all"><%= publicLinkUrl %></p>
+                        <form action="/settings/public-link/revoke" method="post" style="display:inline-block; margin-top:8px">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <button class="btn" type="submit"><%= t('settings.public_link_revoke') || 'Revoke link' %></button>
+                        </form>
+                    <% } else { %>
+                        <form action="/settings/public-link/create" method="post" style="display:inline-block; margin-top:8px">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <button class="btn" type="submit"><%= t('settings.public_link_create') || 'Create link' %></button>
+                        </form>
+                    <% } %>
+                    <p class="subtle" style="margin-top:8px"><%= t('settings.public_link_help') || 'People with the link can only view the main screen and weekly details. They cannot edit or access trash.' %></p>
+                </div>
+            <% } %>
+            <hr style="border-color:#1f2937; margin:16px 0" />
 			<form action="/sessionLogout" method="post">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 				<button class="btn secondary" type="submit"><%= t('settings.logout') %></button>

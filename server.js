@@ -2,6 +2,7 @@
 
 const path = require("path");
 const express = require("express");
+const crypto = require("crypto");
 const dayjs = require("dayjs");
 // Load locales for date formatting
 require("dayjs/locale/ru");
@@ -97,6 +98,20 @@ async function attachWorkspace(req, _res, next) {
 function requireWorkspace(req, res, next) {
     if (!req.user) return res.redirect("/login");
     if (!req.workspace) return res.redirect("/setup-workspace");
+    next();
+}
+
+function isWorkspaceAdmin(req) {
+    if (!req || !req.user || !req.workspace) return false;
+    // Treat creator/owner as admin. If ownerUid is missing (legacy), allow any member as admin.
+    if (!req.workspace.ownerUid) return true;
+    return req.workspace.ownerUid === req.user.uid;
+}
+
+function requireWorkspaceAdmin(req, res, next) {
+    if (!req.user) return res.redirect("/login");
+    if (!req.workspace) return res.redirect("/setup-workspace");
+    if (!isWorkspaceAdmin(req)) return res.status(403).send("Forbidden");
     next();
 }
 
@@ -218,6 +233,7 @@ app.post("/setup-workspace", requireAuth, async (req, res) => {
             currency: curr,
             language,
             memberUids: [uid],
+            ownerUid: uid,
             createdAt: now,
             updatedAt: now,
         };
@@ -234,7 +250,21 @@ app.post("/setup-workspace", requireAuth, async (req, res) => {
 
 // Settings
 app.get("/settings", requireAuth, requireWorkspace, (req, res) => {
-    res.render("settings", { user: req.user, weeklyBudget: req.workspace.weeklyBudget, currency: req.workspace.currency, language: req.workspace.language || res.locals.langCode });
+    const token = req.workspace.publicViewToken || "";
+    const hasPublicLink = !!token;
+    const forwardedProto = (req.headers["x-forwarded-proto"] || "").toString().split(",")[0].trim();
+    const proto = (req.secure || forwardedProto === "https") ? "https" : "http";
+    const host = req.headers.host || req.get("host") || req.hostname;
+    const publicLinkUrl = hasPublicLink ? `${proto}://${host}/s/${token}` : "";
+    res.render("settings", {
+        user: req.user,
+        weeklyBudget: req.workspace.weeklyBudget,
+        currency: req.workspace.currency,
+        language: req.workspace.language || res.locals.langCode,
+        hasPublicLink,
+        publicLinkUrl,
+        isAdmin: isWorkspaceAdmin(req),
+    });
 });
 
 app.post("/settings", requireAuth, requireWorkspace, async (req, res) => {
@@ -263,6 +293,40 @@ app.post("/settings", requireAuth, requireWorkspace, async (req, res) => {
         console.error("Failed to update settings", _e);
     }
     res.redirect("/");
+});
+
+// Public link management (admin only)
+app.post("/settings/public-link/create", requireAuth, requireWorkspace, requireWorkspaceAdmin, async (req, res) => {
+    try {
+        // Generate URL-safe random token that does not reveal workspace id
+        const token = crypto.randomBytes(24).toString("base64url");
+        await db.collection("workspaces").doc(req.workspace.id).update({
+            publicViewToken: token,
+            publicViewCreatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        // Reflect immediately
+        req.workspace.publicViewToken = token;
+    } catch (_e) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to create public link", _e);
+    }
+    res.redirect("/settings");
+});
+
+app.post("/settings/public-link/revoke", requireAuth, requireWorkspace, requireWorkspaceAdmin, async (req, res) => {
+    try {
+        await db.collection("workspaces").doc(req.workspace.id).update({
+            publicViewToken: admin.firestore.FieldValue.delete(),
+            publicViewRevokedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        delete req.workspace.publicViewToken;
+    } catch (_e) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to revoke public link", _e);
+    }
+    res.redirect("/settings");
 });
 
 app.get("/", requireAuth, requireWorkspace, async (req, res) => {
@@ -411,6 +475,8 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         weeklyAllowedByTodayNet: weeklyAllowedByTodayNet,
         weekRangeHuman,
         isCurrentWeek,
+        publicMode: false,
+        detailsUrl: "/details",
     });
 });
 
@@ -519,6 +585,8 @@ app.get("/details", requireAuth, requireWorkspace, async (req, res) => {
         prevUrl: `/details?start=${prevStart.format("YYYY-MM-DD")}`,
         nextUrl: `/details?start=${nextStart.format("YYYY-MM-DD")}`,
         nextDisabled,
+        publicMode: false,
+        homeUrl: "/",
     });
 });
 
@@ -614,6 +682,238 @@ app.get("/trash", requireAuth, requireWorkspace, async (req, res) => {
         console.error("Failed to load trash", _e);
         res.render("trash", { user: req.user, items: [], currencyCode: req.workspace.currency || currencyCode });
     }
+});
+
+// -------------------- Public read-only routes --------------------
+async function loadWorkspaceByPublicToken(token) {
+    if (!token) return null;
+    try {
+        const snap = await db.collection("workspaces").where("publicViewToken", "==", token).limit(1).get();
+        if (snap.empty) return null;
+        const doc = snap.docs[0];
+        return { id: doc.id, ...doc.data() };
+    } catch (_e) {
+        return null;
+    }
+}
+
+app.get("/s/:token", async (req, res) => {
+    const token = (req.params && req.params.token) || "";
+    const ws = await loadWorkspaceByPublicToken(token);
+    if (!ws) return res.status(404).send("Not found");
+
+    // Configure language per workspace for this response
+    const langCode = ws.language || detectLanguage(req, null);
+    res.locals.langCode = langCode;
+    res.locals.t = createTranslator(langCode);
+    try { dayjs.locale(langCode); } catch (_e) {}
+
+    const wsCurrency = (ws && ws.currency) || currencyCode;
+    const wsWeeklyBudget = (ws && ws.weeklyBudget) || weeklyBudget;
+
+    const today = dayjs();
+    const { start, end } = getCurrentCycle(today, budgetStartDay);
+
+    const startStr = start.format("YYYY-MM-DD");
+    const endStr = end.format("YYYY-MM-DD");
+    const monthSnap = await db
+        .collection("purchases")
+        .where("workspaceId", "==", ws.id)
+        .where("date", ">=", startStr)
+        .where("date", "<=", endStr)
+        .get();
+    const monthlyPurchases = monthSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => !p.deleted);
+    const spent = sumPurchasesInRange(monthlyPurchases, start, end);
+    const budgetLeft = monthlyBudget - spent;
+
+    const { daysInCycle, dailyBudget, daysElapsed, allowedByToday } = computeAllowanceToDate(today, budgetStartDay, monthlyBudget);
+    const spentToDate = sumPurchasesInRange(monthlyPurchases, start, today);
+    const allowedByTodayNet = allowedByToday - spentToDate;
+    const haveToDate = allowedByTodayNet;
+
+    // Weekly summary
+    const { start: wStart, end: wEnd } = getCurrentWeek(today, weekStartDayOfWeek);
+    const wStartStr = wStart.format("YYYY-MM-DD");
+    const wEndStr = wEnd.format("YYYY-MM-DD");
+    const weekSnap = await db
+        .collection("purchases")
+        .where("workspaceId", "==", ws.id)
+        .where("date", ">=", wStartStr)
+        .where("date", "<=", wEndStr)
+        .get();
+    const weeklyPurchases = weekSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => !p.deleted);
+    const dynamicBigThreshold = (typeof wsWeeklyBudget === "number" ? wsWeeklyBudget : 0) * 0.25;
+    const weeklySpentDetailed = sumWeeklyPurchasesDetailed(weeklyPurchases, wStart, wEnd, dynamicBigThreshold);
+    const weeklySpentTotal = weeklySpentDetailed.total;
+    const weeklyLeft = wsWeeklyBudget - weeklySpentTotal;
+    const weeklyAllowance = computeWeeklyAllowanceToDate(today, weekStartDayOfWeek, wsWeeklyBudget);
+    const weeklySpentToDate = sumPurchasesInRange(weeklyPurchases, wStart, today);
+    const weeklyAllowedByTodayNet = weeklyAllowance.allowedByToday - weeklySpentToDate;
+
+    const totalIcons = 10;
+    const usedRatio = Math.max(0, Math.min(1, weeklySpentTotal / Math.max(1, wsWeeklyBudget)));
+    let usedIcons = Math.round(usedRatio * totalIcons);
+    let bigIcons = 0;
+    let smallIcons = 0;
+    if (weeklySpentTotal > 0) {
+        if (weeklySpentDetailed.smallTotal > 0 && usedIcons === 0) {
+            usedIcons = 1;
+        }
+        const bigShare = weeklySpentDetailed.bigTotal / weeklySpentTotal;
+        bigIcons = Math.round(usedIcons * bigShare);
+        smallIcons = Math.max(0, usedIcons - bigIcons);
+        if (weeklySpentDetailed.smallTotal > 0 && smallIcons === 0) {
+            if (bigIcons > 0) {
+                bigIcons -= 1;
+                smallIcons = 1;
+            } else if (usedIcons < totalIcons) {
+                usedIcons += 1;
+                smallIcons = 1;
+            } else {
+                smallIcons = 1;
+                bigIcons = Math.max(0, usedIcons - smallIcons);
+            }
+        }
+    }
+    const emptyIcons = Math.max(0, totalIcons - usedIcons);
+
+    const overspend = Math.max(0, weeklySpentTotal - wsWeeklyBudget);
+    const devilIconsTotal = overspend > 0 ? Math.ceil((overspend / Math.max(1, wsWeeklyBudget)) * 10) : 0;
+    const firstRowDevils = Math.min(2, devilIconsTotal);
+    const weeklyDevilRows = [];
+    if (devilIconsTotal > 2) {
+        let remaining = devilIconsTotal - 2;
+        while (remaining > 0) {
+            const rowDevils = Math.min(12, remaining);
+            weeklyDevilRows.push({ devils: rowDevils });
+            remaining -= rowDevils;
+        }
+    }
+
+    const bigCount = weeklySpentDetailed.bigCount;
+    const smallCount = weeklySpentDetailed.smallCount;
+    let statusTail;
+    let overBudgetExplanation = "";
+    if (weeklyLeft >= 0) {
+        statusTail = res.locals.t("weekly.status_on_track", { left: formatCurrency(weeklyLeft, wsCurrency) });
+    } else {
+        statusTail = res.locals.t("weekly.status_over", { over: formatCurrency(Math.abs(weeklyLeft), wsCurrency) });
+        overBudgetExplanation = res.locals.t("weekly.over_explainer");
+    }
+    const statusLine = `${bigCount} ${res.locals.t("weekly.big", { count: bigCount })} (🌚) + ${smallCount} ${res.locals.t("weekly.small", { count: smallCount })} (🌝) ${res.locals.t("weekly.purchases", { purchaseCount: bigCount + smallCount, smallCount: smallCount })} — ${statusTail}${overBudgetExplanation}`;
+
+    const weekRangeHuman = formatWeekRangeHuman(wStart, wEnd, res.locals.langCode);
+    const currentWeekStart = getCurrentWeek(today, weekStartDayOfWeek).start;
+    const isCurrentWeek = wStart.isSame(currentWeekStart, "day");
+
+    res.render("index", {
+        user: null,
+        budgetLeft,
+        budgetLeftFormatted: formatCurrency(budgetLeft, wsCurrency),
+        currencyCode: wsCurrency,
+        cycleStart: start.format("YYYY-MM-DD"),
+        cycleEnd: end.format("YYYY-MM-DD"),
+        cycleEndHuman: formatDayMonthLong(end, res.locals.langCode),
+        daysInCycle,
+        dailyBudget,
+        dailyBudgetFormatted: formatCurrency(dailyBudget, wsCurrency),
+        daysElapsed,
+        allowedByTodaySchedule: allowedByToday,
+        allowedByTodayScheduleFormatted: formatCurrency(allowedByToday, wsCurrency),
+        spentToDate,
+        spentToDateFormatted: formatCurrency(spentToDate, wsCurrency),
+        allowedByToday: allowedByTodayNet,
+        allowedByTodayFormatted: formatCurrency(allowedByTodayNet, wsCurrency),
+        haveToDate,
+        haveToDateFormatted: formatCurrency(haveToDate, wsCurrency),
+        weeklyBudget: wsWeeklyBudget,
+        weeklySpentTotal,
+        weeklyUsedFormatted: res.locals.t("weekly.used_format", { used: formatCurrency(weeklySpentTotal, wsCurrency), total: formatCurrency(wsWeeklyBudget, wsCurrency) }),
+        weeklyIcons: { totalIcons, bigIcons, smallIcons, emptyIcons },
+        weeklyDevilRows,
+        firstRowDevils,
+        weeklyStatusLine: statusLine,
+        weeklyAllowedByTodayNet: weeklyAllowedByTodayNet,
+        weekRangeHuman,
+        isCurrentWeek,
+        publicMode: true,
+        detailsUrl: `/s/${token}/details`,
+    });
+});
+
+app.get("/s/:token/details", async (req, res) => {
+    const token = (req.params && req.params.token) || "";
+    const ws = await loadWorkspaceByPublicToken(token);
+    if (!ws) return res.status(404).send("Not found");
+
+    const langCode = ws.language || detectLanguage(req, null);
+    res.locals.langCode = langCode;
+    res.locals.t = createTranslator(langCode);
+    try { dayjs.locale(langCode); } catch (_e) {}
+
+    const wsCurrency = (ws && ws.currency) || currencyCode;
+
+    const startParam = ((req.query && req.query.start) || "").toString().trim();
+    let baseDate = dayjs();
+    if (startParam) {
+        const parsed = dayjs(startParam);
+        if (parsed.isValid()) baseDate = parsed;
+    }
+
+    const { start: wStart, end: wEnd } = getCurrentWeek(baseDate, weekStartDayOfWeek);
+    const wStartStr = wStart.format("YYYY-MM-DD");
+    const wEndStr = wEnd.format("YYYY-MM-DD");
+
+    const prevStart = wStart.subtract(7, "day").startOf("day");
+    const nextStart = wStart.add(7, "day").startOf("day");
+    const currentWeekStart = getCurrentWeek(dayjs(), weekStartDayOfWeek).start;
+    const nextDisabled = nextStart.isAfter(currentWeekStart);
+
+    const snap = await db
+        .collection("purchases")
+        .where("workspaceId", "==", ws.id)
+        .where("date", ">=", wStartStr)
+        .where("date", "<=", wEndStr)
+        .get();
+    const byDateMap = new Map();
+    for (const d of snap.docs) {
+        const p = { id: d.id, ...d.data() };
+        if (p.deleted) continue;
+        const key = p.date;
+        if (!byDateMap.has(key)) byDateMap.set(key, []);
+        byDateMap.get(key).push(p);
+    }
+    const days = Array.from(byDateMap.entries())
+        .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+        .map(([dateStr, items]) => {
+            const dayName = dayjs(dateStr).format("ddd");
+            const dayTotal = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+            return {
+                dateStr,
+                dayName,
+                dayTotal,
+                dayTotalFormatted: formatCurrency(dayTotal, wsCurrency),
+                items,
+            };
+        });
+
+    const weekRangeHuman = formatWeekRangeHuman(wStart, wEnd, res.locals.langCode);
+
+    res.render("details", {
+        user: null,
+        days,
+        currencyCode: wsCurrency,
+        weekRangeHuman,
+        prevUrl: `/s/${token}/details?start=${prevStart.format("YYYY-MM-DD")}`,
+        nextUrl: `/s/${token}/details?start=${nextStart.format("YYYY-MM-DD")}`,
+        nextDisabled,
+        publicMode: true,
+        homeUrl: `/s/${token}`,
+    });
 });
 
 // Restore soft-deleted purchase

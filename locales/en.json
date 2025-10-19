@@ -68,7 +68,11 @@
     "language": "Language",
     "cancel": "Cancel",
     "save": "Save",
-    "logout": "Log out"
+    "logout": "Log out",
+    "public_link_title": "Public read-only link",
+    "public_link_create": "Create link",
+    "public_link_revoke": "Revoke link",
+    "public_link_help": "People with the link can only view the main screen and weekly details. They cannot edit or access trash."
   },
   "setup": {
     "title": "Create your workspace",

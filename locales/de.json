@@ -68,7 +68,11 @@
     "language": "Sprache",
     "cancel": "Abbrechen",
     "save": "Speichern",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "public_link_title": "Öffentlicher Nur-Lesen-Link",
+    "public_link_create": "Link erstellen",
+    "public_link_revoke": "Link widerrufen",
+    "public_link_help": "Mit dem Link kann man nur die Hauptansicht und Wochen-Details sehen. Bearbeiten und Papierkorb sind nicht möglich."
   },
   "setup": {
     "title": "Arbeitsbereich erstellen",

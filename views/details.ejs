@@ -17,7 +17,7 @@
 				<a class="menu-item" href="/trash" role="menuitem"><%= (typeof t === 'function' ? t('trash.show_trash') : 'Show trash') %></a>
 			</div>
 		</div>
-		<div class="card">
+        <div class="card">
 			<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
 				<a class="btn secondary" href="<%= prevUrl %>">◀︎ <span class="hidden-sm"><%= t('details.prev_week') %></span></a>
 				<h1 class="title" style="margin:0; text-align:center; flex:1;"><%= t('details.week_of', { range: weekRangeHuman }) %></h1>
@@ -44,20 +44,24 @@
 								<div style="font-weight:600"><%= (item.amount).toFixed(2) %> <%= currencyCode %></div>
 								<div class="subtle"><%= item.description || "—" %></div>
 							</div>
-					<a class="btn secondary" href="/edit/<%= item.id %>"><%= t('details.edit') %></a>
-					<form action="/delete/<%= item.id %>" method="post" style="margin:0">
-							<input type="hidden" name="_csrf" value="<%= csrfToken %>">
-							<button class="btn" type="submit"><%= t('details.delete') %></button>
-							</form>
+                    <% if (!publicMode) { %>
+                        <a class="btn secondary" href="/edit/<%= item.id %>"><%= t('details.edit') %></a>
+                        <form action="/delete/<%= item.id %>" method="post" style="margin:0">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button class="btn" type="submit"><%= t('details.delete') %></button>
+                                </form>
+                    <% } %>
 						</div>
 					<% }) %>
 				</div>
 				<hr style="border-color:#1f2937; margin:16px 0" />
 			<% }) %>
-			<div class="actions floating-actions">
-				<a class="btn secondary" href="/"><%= t('details.back') %></a>
-				<a class="btn" href="/spend"><%= t('details.add_spend') %></a>
-			</div>
+            <div class="actions floating-actions">
+                <a class="btn secondary" href="<%= typeof homeUrl !== 'undefined' ? homeUrl : '/' %>"><%= t('details.back') %></a>
+                <% if (!publicMode) { %>
+                    <a class="btn" href="/spend"><%= t('details.add_spend') %></a>
+                <% } %>
+            </div>
 		</div>
 	</div>
 	<script src="/main.js"></script>

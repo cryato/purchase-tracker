@@ -30,7 +30,7 @@
 			<% } %>
 		</div>
 
-		<div class="card">
+        <div class="card">
 			<div class="title">
 				<% if (isCurrentWeek) { %>
 					<%= t('index.week_of_so_far', { range: weekRangeHuman }) %>
@@ -73,13 +73,15 @@
 			<div class="subtle" style="margin-top:12px">
 				<%= weeklyStatusLine %>
 			</div>
-			<div class="actions" style="margin-top:16px">
-				<a class="btn secondary" id="view-daily-details" href="/details"><%= t('index.view_daily_details') %></a>
-			</div>
+            <div class="actions" style="margin-top:16px">
+                <a class="btn secondary" id="view-daily-details" href="<%= typeof detailsUrl !== 'undefined' ? detailsUrl : '/details' %>"><%= t('index.view_daily_details') %></a>
+            </div>
 		</div>
-		<div class="below-actions center">
-			<a class="btn" href="/spend"><%= t('index.spend') %></a>
-		</div>
+        <% if (!publicMode) { %>
+        <div class="below-actions center">
+            <a class="btn" href="/spend"><%= t('index.spend') %></a>
+        </div>
+        <% } %>
 	</div>
 	<script src="/main.js"></script>
 </body>
