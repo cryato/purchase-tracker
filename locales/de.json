@@ -18,11 +18,11 @@
   "weekly": {
     "big": "große",
     "small": "kleine",
+    "purchases": "Käufe",
     "big_purchase": "Großer Kauf",
     "small_purchase": "Kleiner Kauf",
     "overspend": "Überbudget",
-    "progress_aria": "Wöchentlicher Ausgabenfortschritt",
-    "overspend_row_aria": "Überbudget-Zeile",
+    "used_format": "{used} / {total} verwendet",
     "status_on_track": "im Plan, {left} übrig",
     "status_over": "{over} über Budget",
     "over_explainer": " — 👹 bedeutet über Budget"

@@ -3,6 +3,9 @@
 const path = require("path");
 const express = require("express");
 const dayjs = require("dayjs");
+// Load locales for date formatting
+require("dayjs/locale/ru");
+require("dayjs/locale/de");
 const { createTranslator, detectLanguage, getSupportedLanguages, supportedLanguageCodes } = require("./utils/i18n");
 const cookieParser = require("cookie-parser");
 const csrf = require("csurf");
@@ -147,6 +150,8 @@ app.use((req, res, next) => {
     res.locals.langCode = langCode;
     res.locals.t = createTranslator(langCode);
     res.locals.languages = getSupportedLanguages();
+    // Set dayjs locale for localized month/day names
+    try { dayjs.locale(langCode); } catch (_e) {}
     next();
 });
 
@@ -363,7 +368,7 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         statusTail = res.locals.t("weekly.status_over", { over: formatCurrency(Math.abs(weeklyLeft), wsCurrency) });
         overBudgetExplanation = res.locals.t("weekly.over_explainer");
     }
-    const statusLine = `${bigCount} ${res.locals.t("weekly.big")} (🌚) + ${smallCount} ${res.locals.t("weekly.small")} (🌝) purchases — ${statusTail}${overBudgetExplanation}`;
+    const statusLine = `${bigCount} ${res.locals.t("weekly.big")} (🌚) + ${smallCount} ${res.locals.t("weekly.small")} (🌝) ${res.locals.t("weekly.purchases")} — ${statusTail}${overBudgetExplanation}`;
 
     // Human week range for title: if same month use "D-D MMMM", else "D MMM - D MMM"
     const sameMonth = wStart.month() === wEnd.month() && wStart.year() === wEnd.year();
@@ -382,7 +387,7 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         currencyCode: wsCurrency,
         cycleStart: start.format("YYYY-MM-DD"),
         cycleEnd: end.format("YYYY-MM-DD"),
-        cycleEndHuman: end.format("D [of] MMMM"),
+        cycleEndHuman: end.format("D MMMM"),
         daysInCycle,
         dailyBudget,
         dailyBudgetFormatted: formatCurrency(dailyBudget, wsCurrency),
@@ -397,7 +402,7 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         haveToDateFormatted: formatCurrency(haveToDate, wsCurrency),
         weeklyBudget: wsWeeklyBudget,
         weeklySpentTotal,
-        weeklyUsedFormatted: `${formatCurrency(weeklySpentTotal, wsCurrency)} / ${formatCurrency(wsWeeklyBudget, wsCurrency)} used`,
+        weeklyUsedFormatted: res.locals.t("weekly.used_format", { used: formatCurrency(weeklySpentTotal, wsCurrency), total: formatCurrency(wsWeeklyBudget, wsCurrency) }),
         weeklyIcons: { totalIcons, bigIcons, smallIcons, emptyIcons },
         weeklyDevilRows,
         firstRowDevils,
