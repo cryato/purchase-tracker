@@ -18,7 +18,7 @@
   "weekly": {
     "big": "big",
     "small": "small",
-    "purchases": "purchases",
+    "purchases": "{count, plural, one{purchase} other{purchases}}",
     "big_purchase": "Big purchase",
     "small_purchase": "Small purchase",
     "overspend": "Overspend",

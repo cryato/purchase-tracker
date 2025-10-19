@@ -6,7 +6,7 @@ const dayjs = require("dayjs");
 // Load locales for date formatting
 require("dayjs/locale/ru");
 require("dayjs/locale/de");
-const { createTranslator, detectLanguage, getSupportedLanguages, supportedLanguageCodes } = require("./utils/i18n");
+const { createTranslator, detectLanguage, getSupportedLanguages, supportedLanguageCodes, formatWeekRangeHuman, formatDayMonthLong } = require("./utils/i18n");
 const cookieParser = require("cookie-parser");
 const csrf = require("csurf");
 const admin = require("firebase-admin");
@@ -368,13 +368,10 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         statusTail = res.locals.t("weekly.status_over", { over: formatCurrency(Math.abs(weeklyLeft), wsCurrency) });
         overBudgetExplanation = res.locals.t("weekly.over_explainer");
     }
-    const statusLine = `${bigCount} ${res.locals.t("weekly.big")} (🌚) + ${smallCount} ${res.locals.t("weekly.small")} (🌝) ${res.locals.t("weekly.purchases")} — ${statusTail}${overBudgetExplanation}`;
+    const statusLine = `${bigCount} ${res.locals.t("weekly.big", { count: bigCount })} (🌚) + ${smallCount} ${res.locals.t("weekly.small", { count: smallCount })} (🌝) ${res.locals.t("weekly.purchases", { count: bigCount + smallCount })} — ${statusTail}${overBudgetExplanation}`;
 
     // Human week range for title: if same month use "D-D MMMM", else "D MMM - D MMM"
-    const sameMonth = wStart.month() === wEnd.month() && wStart.year() === wEnd.year();
-    const weekRangeHuman = sameMonth
-        ? `${wStart.format("D")}-${wEnd.format("D")} ${wEnd.format("MMMM")}`
-        : `${wStart.format("D MMM")} - ${wEnd.format("D MMM")}`;
+    const weekRangeHuman = formatWeekRangeHuman(wStart, wEnd, res.locals.langCode);
 
     // Determine whether selected week is the current week
     const currentWeekStart = getCurrentWeek(today, weekStartDayOfWeek).start;
@@ -387,7 +384,7 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         currencyCode: wsCurrency,
         cycleStart: start.format("YYYY-MM-DD"),
         cycleEnd: end.format("YYYY-MM-DD"),
-        cycleEndHuman: end.format("D MMMM"),
+        cycleEndHuman: formatDayMonthLong(end, res.locals.langCode),
         daysInCycle,
         dailyBudget,
         dailyBudgetFormatted: formatCurrency(dailyBudget, wsCurrency),
@@ -506,10 +503,7 @@ app.get("/details", requireAuth, requireWorkspace, async (req, res) => {
         });
 
     // Human week range for title: if same month use "D-D MMMM", else "D MMM - D MMM"
-    const sameMonth = wStart.month() === wEnd.month() && wStart.year() === wEnd.year();
-    const weekRangeHuman = sameMonth
-        ? `${wStart.format("D")}-${wEnd.format("D")} ${wEnd.format("MMMM")}`
-        : `${wStart.format("D MMM")} - ${wEnd.format("D MMM")}`;
+    const weekRangeHuman = formatWeekRangeHuman(wStart, wEnd, res.locals.langCode);
 
     res.render("details", {
         user: req.user,

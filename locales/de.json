@@ -16,9 +16,9 @@
     "spend": "Ausgeben"
   },
   "weekly": {
-    "big": "große",
-    "small": "kleine",
-    "purchases": "Käufe",
+    "big": "{count, plural, one{große} other{große}}",
+    "small": "{count, plural, one{kleine} other{kleine}}",
+    "purchases": "{count, plural, one{Kauf} other{Käufe}}",
     "big_purchase": "Großer Kauf",
     "small_purchase": "Kleiner Kauf",
     "overspend": "Überbudget",
