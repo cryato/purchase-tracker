@@ -1,0 +1,75 @@
+{
+  "app": {
+    "title": "Ausgaben-Tracker",
+    "menu": {
+      "settings": "Einstellungen",
+      "logout": "Abmelden",
+      "login": "Anmelden"
+    }
+  },
+  "index": {
+    "week_of": "Woche vom {range} bisher",
+    "view_daily_details": "Tagesdetails ansehen",
+    "spend": "Ausgeben"
+  },
+  "weekly": {
+    "big": "große",
+    "small": "kleine",
+    "big_purchase": "Großer Kauf",
+    "small_purchase": "Kleiner Kauf",
+    "overspend": "Überbudget",
+    "status_on_track": "im Plan, {left} übrig",
+    "status_over": "{over} über Budget",
+    "over_explainer": " — 👹 bedeutet über Budget"
+  },
+  "details": {
+    "title": "Diese Woche",
+    "none": "Keine Einkäufe — Woche gestartet!",
+    "total": "Summe: {amount}",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "back": "Zurück",
+    "add_spend": "Ausgabe hinzufügen"
+  },
+  "spend": {
+    "title": "Ausgabe hinzufügen",
+    "amount": "Betrag ({currency})",
+    "date": "Datum",
+    "description": "Beschreibung (optional)",
+    "description_placeholder": "Was hast du gekauft?",
+    "cancel": "Abbrechen",
+    "submit": "Ausgabe hinzufügen"
+  },
+  "edit": {
+    "title": "Kauf bearbeiten",
+    "amount": "Betrag ({currency})",
+    "date": "Datum",
+    "description": "Beschreibung (optional)",
+    "cancel": "Abbrechen",
+    "save": "Speichern"
+  },
+  "login": {
+    "title": "Anmelden oder Konto erstellen",
+    "back": "Zurück"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "weekly_budget": "Wöchentliches Budget",
+    "currency_code": "Währungscode",
+    "language": "Sprache",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "logout": "Abmelden"
+  },
+  "setup": {
+    "title": "Arbeitsbereich erstellen",
+    "subtitle": "Wir nutzen dies, um deinen wöchentlichen Fortschritt zu berechnen.",
+    "weekly_budget": "Wöchentliches Budget",
+    "currency_code": "Währungscode",
+    "language": "Sprache",
+    "cancel": "Abbrechen",
+    "create": "Arbeitsbereich erstellen"
+  }
+}
+
+

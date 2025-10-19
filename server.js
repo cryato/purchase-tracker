@@ -3,6 +3,7 @@
 const path = require("path");
 const express = require("express");
 const dayjs = require("dayjs");
+const { createTranslator, detectLanguage, getSupportedLanguages, supportedLanguageCodes } = require("./utils/i18n");
 const cookieParser = require("cookie-parser");
 const csrf = require("csurf");
 const admin = require("firebase-admin");
@@ -116,6 +117,9 @@ app.use((req, res, next) => {
         res.locals.csrfToken = "";
     }
     res.locals.user = req.user || null;
+    // Attach translator stub early (will be replaced after workspace attach)
+    res.locals.t = (k, p) => createTranslator("en")(k, p);
+    res.locals.langCode = "en";
     next();
 });
 
@@ -135,6 +139,16 @@ app.use(async (req, _res, next) => {
 
 // Load workspace (if any) after user attach
 app.use(attachWorkspace);
+
+// Language detection and translator
+app.use((req, res, next) => {
+    const wsLang = req.workspace && req.workspace.language;
+    const langCode = detectLanguage(req, wsLang);
+    res.locals.langCode = langCode;
+    res.locals.t = createTranslator(langCode);
+    res.locals.languages = getSupportedLanguages();
+    next();
+});
 
 function requireAuth(req, res, next) {
     if (!req.user) return res.redirect("/login");
@@ -184,6 +198,11 @@ app.post("/setup-workspace", requireAuth, async (req, res) => {
     const uid = req.user.uid;
     const weekly = Number((req.body.weeklyBudget || "").toString());
     const curr = (req.body.currency || "").toString().trim().toUpperCase();
+    let language = (req.body.language || "").toString().trim();
+    if (!supportedLanguageCodes.includes(language)) {
+        // default to device language if supported, else English
+        language = detectLanguage(req, null);
+    }
     if (!Number.isFinite(weekly) || weekly <= 0 || !curr) {
         return res.status(400).send("Invalid input");
     }
@@ -192,6 +211,7 @@ app.post("/setup-workspace", requireAuth, async (req, res) => {
         const wsDoc = {
             weeklyBudget: weekly,
             currency: curr,
+            language,
             memberUids: [uid],
             createdAt: now,
             updatedAt: now,
@@ -209,22 +229,30 @@ app.post("/setup-workspace", requireAuth, async (req, res) => {
 
 // Settings
 app.get("/settings", requireAuth, requireWorkspace, (req, res) => {
-    res.render("settings", { user: req.user, weeklyBudget: req.workspace.weeklyBudget, currency: req.workspace.currency });
+    res.render("settings", { user: req.user, weeklyBudget: req.workspace.weeklyBudget, currency: req.workspace.currency, language: req.workspace.language || res.locals.langCode });
 });
 
 app.post("/settings", requireAuth, requireWorkspace, async (req, res) => {
     const weekly = Number((req.body.weeklyBudget || "").toString());
     const curr = (req.body.currency || "").toString().trim().toUpperCase();
+    const language = (req.body.language || "").toString().trim();
     if (!Number.isFinite(weekly) || weekly <= 0 || !curr) return res.redirect("/settings");
     try {
-        await db.collection("workspaces").doc(req.workspace.id).update({
+        const update = {
             weeklyBudget: weekly,
             currency: curr,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        };
+        if (supportedLanguageCodes.includes(language)) {
+            update.language = language;
+        }
+        await db.collection("workspaces").doc(req.workspace.id).update(update);
         // Update attached workspace to reflect new settings immediately
         req.workspace.weeklyBudget = weekly;
         req.workspace.currency = curr;
+        if (supportedLanguageCodes.includes(language)) {
+            req.workspace.language = language;
+        }
     } catch (_e) {
         // eslint-disable-next-line no-console
         console.error("Failed to update settings", _e);
@@ -324,12 +352,12 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
     let statusTail;
     let overBudgetExplanation = "";
     if (weeklyLeft >= 0) {
-        statusTail = `on track, ${formatCurrency(weeklyLeft, wsCurrency)} left`;
+        statusTail = res.locals.t("weekly.status_on_track", { left: formatCurrency(weeklyLeft, wsCurrency) });
     } else {
-        statusTail = `${formatCurrency(Math.abs(weeklyLeft), wsCurrency)} over budget`;
-        overBudgetExplanation = " — 👹 means we’re over budget";
+        statusTail = res.locals.t("weekly.status_over", { over: formatCurrency(Math.abs(weeklyLeft), wsCurrency) });
+        overBudgetExplanation = res.locals.t("weekly.over_explainer");
     }
-    const statusLine = `${bigCount} big (🌚) + ${smallCount} small (🌝) purchases — ${statusTail}${overBudgetExplanation}`;
+    const statusLine = `${bigCount} ${res.locals.t("weekly.big")} (🌚) + ${smallCount} ${res.locals.t("weekly.small")} (🌝) purchases — ${statusTail}${overBudgetExplanation}`;
 
     // Human week range for title: if same month use "D-D MMMM", else "D MMM - D MMM"
     const sameMonth = wStart.month() === wEnd.month() && wStart.year() === wEnd.year();

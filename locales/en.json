@@ -1,0 +1,75 @@
+{
+  "app": {
+    "title": "Purchase Tracker",
+    "menu": {
+      "settings": "Settings",
+      "logout": "Logout",
+      "login": "Login"
+    }
+  },
+  "index": {
+    "week_of": "Week of {range} so far",
+    "view_daily_details": "View daily details",
+    "spend": "Spend"
+  },
+  "weekly": {
+    "big": "big",
+    "small": "small",
+    "big_purchase": "Big purchase",
+    "small_purchase": "Small purchase",
+    "overspend": "Overspend",
+    "status_on_track": "on track, {left} left",
+    "status_over": "{over} over budget",
+    "over_explainer": " — 👹 means we’re over budget"
+  },
+  "details": {
+    "title": "This week",
+    "none": "No purchases made — week started!",
+    "total": "Total: {amount}",
+    "edit": "Edit",
+    "delete": "Delete",
+    "back": "Back",
+    "add_spend": "Add spend"
+  },
+  "spend": {
+    "title": "Add spend",
+    "amount": "Amount ({currency})",
+    "date": "Date",
+    "description": "Description (optional)",
+    "description_placeholder": "What did you buy?",
+    "cancel": "Cancel",
+    "submit": "Add spend"
+  },
+  "edit": {
+    "title": "Edit purchase",
+    "amount": "Amount ({currency})",
+    "date": "Date",
+    "description": "Description (optional)",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "login": {
+    "title": "Sign in or create account",
+    "back": "Back"
+  },
+  "settings": {
+    "title": "Settings",
+    "weekly_budget": "Weekly budget",
+    "currency_code": "Currency code",
+    "language": "Language",
+    "cancel": "Cancel",
+    "save": "Save",
+    "logout": "Log out"
+  },
+  "setup": {
+    "title": "Create your workspace",
+    "subtitle": "We’ll use this to calculate your weekly progress.",
+    "weekly_budget": "Weekly budget",
+    "currency_code": "Currency code",
+    "language": "Language",
+    "cancel": "Cancel",
+    "create": "Create workspace"
+  }
+}
+
+
