@@ -371,6 +371,10 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         ? `${wStart.format("D")}-${wEnd.format("D")} ${wEnd.format("MMMM")}`
         : `${wStart.format("D MMM")} - ${wEnd.format("D MMM")}`;
 
+    // Determine whether selected week is the current week
+    const currentWeekStart = getCurrentWeek(today, weekStartDayOfWeek).start;
+    const isCurrentWeek = wStart.isSame(currentWeekStart, "day");
+
     res.render("index", {
         user: req.user,
         budgetLeft,
@@ -400,6 +404,7 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         weeklyStatusLine: statusLine,
         weeklyAllowedByTodayNet: weeklyAllowedByTodayNet,
         weekRangeHuman,
+        isCurrentWeek,
     });
 });
 
