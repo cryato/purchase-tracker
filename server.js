@@ -368,7 +368,7 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         statusTail = res.locals.t("weekly.status_over", { over: formatCurrency(Math.abs(weeklyLeft), wsCurrency) });
         overBudgetExplanation = res.locals.t("weekly.over_explainer");
     }
-    const statusLine = `${bigCount} ${res.locals.t("weekly.big", { count: bigCount })} (🌚) + ${smallCount} ${res.locals.t("weekly.small", { count: smallCount })} (🌝) ${res.locals.t("weekly.purchases", { count: bigCount + smallCount })} — ${statusTail}${overBudgetExplanation}`;
+    const statusLine = `${bigCount} ${res.locals.t("weekly.big", { count: bigCount })} (🌚) + ${smallCount} ${res.locals.t("weekly.small", { count: smallCount })} (🌝) ${res.locals.t("weekly.purchases", { purchaseCount: bigCount + smallCount, smallCount: smallCount })} — ${statusTail}${overBudgetExplanation}`;
 
     // Human week range for title: if same month use "D-D MMMM", else "D MMM - D MMM"
     const weekRangeHuman = formatWeekRangeHuman(wStart, wEnd, res.locals.langCode);

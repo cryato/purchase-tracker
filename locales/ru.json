@@ -18,7 +18,7 @@
   "weekly": {
     "big": "{count, plural, one{большая} few{большие} many{больших} other{больших}}",
     "small": "{count, plural, one{маленькая} few{маленькие} many{маленьких} other{маленьких}}",
-    "purchases": "{count, plural, one{покупка} few{покупки} many{покупок} other{покупок}}",
+    "purchases": "{smallCount, plural, one{покупка} few{покупки} many{покупок} other{покупок}}",
     "big_purchase": "Большая покупка",
     "small_purchase": "Маленькая покупка",
     "overspend": "Выход за бюджет",
