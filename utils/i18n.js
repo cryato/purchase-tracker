@@ -43,27 +43,87 @@ function selectPluralForm(langCode, n) {
 	}
 }
 
+// Helper: find matching closing brace for a '{' at index 'start'
+function findMatchingBrace(str, start) {
+    let depth = 0;
+    for (let i = start; i < str.length; i++) {
+        const ch = str[i];
+        if (ch === "{") depth++;
+        else if (ch === "}") {
+            depth--;
+            if (depth === 0) return i;
+        }
+    }
+    return -1;
+}
+
+function parsePluralOptions(body) {
+    const options = {};
+    let i = 0;
+    while (i < body.length) {
+        // skip whitespace and commas
+        while (i < body.length && (body[i] === ' ' || body[i] === '\n' || body[i] === '\t' || body[i] === ',')) i++;
+        if (i >= body.length) break;
+        // read label up to '{'
+        let label = '';
+        while (i < body.length && body[i] !== '{' && body[i] !== ' ' && body[i] !== '\n' && body[i] !== '\t') {
+            label += body[i++];
+        }
+        // skip whitespace before '{'
+        while (i < body.length && body[i] !== '{') i++;
+        if (i >= body.length || body[i] !== '{') break;
+        const startMsg = i;
+        const endMsg = findMatchingBrace(body, startMsg);
+        if (endMsg === -1) break;
+        const msg = body.slice(startMsg + 1, endMsg);
+        options[label] = msg;
+        i = endMsg + 1;
+    }
+    return options;
+}
+
 function interpolate(template, params, langCode) {
-	if (!params) return template;
-	// Handle plural macros first
-	const pluralRegex = /\{\s*(\w+)\s*,\s*plural\s*,\s*([^}]*)\}/g;
-	template = template.replace(pluralRegex, (_, varName, body) => {
-		const count = params[varName];
-		const chosen = selectPluralForm(langCode, count);
-		const pick = (label) => {
-			const m = new RegExp(label + "\\{([^}]*)\\}").exec(body);
-			return m ? m[1] : undefined;
-		};
-		let out = pick(chosen);
-		if (out === undefined) out = pick("other");
-		if (out === undefined) out = "";
-		return out;
-	});
-	// Then handle simple {var} replacements
-	return template.replace(/\{(\w+)\}/g, (_, k) => {
-		const v = params[k];
-		return v === undefined || v === null ? "" : String(v);
-	});
+    if (!params) params = {};
+    // Scan and replace plural blocks with balanced brace parsing
+    let out = '';
+    let i = 0;
+    while (i < template.length) {
+        const ch = template[i];
+        if (ch === '{') {
+            const end = findMatchingBrace(template, i);
+            if (end === -1) { out += template[i++]; continue; }
+            const inner = template.slice(i + 1, end).trim();
+            // Attempt to parse plural: var, plural, options...
+            const firstComma = inner.indexOf(',');
+            if (firstComma !== -1) {
+                const varName = inner.slice(0, firstComma).trim();
+                const rest1 = inner.slice(firstComma + 1).trim();
+                if (rest1.startsWith('plural')) {
+                    const rest2 = rest1.slice('plural'.length).trim();
+                    if (rest2.startsWith(',')) {
+                        const optionsBody = rest2.slice(1).trim();
+                        const options = parsePluralOptions(optionsBody);
+                        const chosen = selectPluralForm(langCode, params[varName]);
+                        let chosenMsg = options[chosen];
+                        if (chosenMsg === undefined) chosenMsg = options.other || '';
+                        // Recursively interpolate inside chosen message
+                        out += interpolate(chosenMsg, params, langCode);
+                        i = end + 1;
+                        continue;
+                    }
+                }
+            }
+            // Not a plural block: treat as simple variable
+            const key = inner;
+            const val = params[key];
+            out += (val === undefined || val === null) ? '' : String(val);
+            i = end + 1;
+        } else {
+            out += ch;
+            i++;
+        }
+    }
+    return out;
 }
 
 function createTranslator(langCode) {
