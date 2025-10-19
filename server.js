@@ -286,8 +286,14 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
     const allowedByTodayNet = allowedByToday - spentToDate;
     const haveToDate = allowedByTodayNet;
 
-    // Weekly summary metrics
-    const { start: wStart, end: wEnd } = getCurrentWeek(today, weekStartDayOfWeek);
+    // Weekly summary metrics (respect selected week from cookie if present)
+    const selectedWeekStartStr = (req.cookies && req.cookies.selectedWeekStart) || "";
+    let weeklyBase = today;
+    if (selectedWeekStartStr) {
+        const parsedSelected = dayjs(selectedWeekStartStr);
+        if (parsedSelected.isValid()) weeklyBase = parsedSelected;
+    }
+    const { start: wStart, end: wEnd } = getCurrentWeek(weeklyBase, weekStartDayOfWeek);
     const wStartStr = wStart.format("YYYY-MM-DD");
     const wEndStr = wEnd.format("YYYY-MM-DD");
     const weekSnap = await db
@@ -450,6 +456,16 @@ app.get("/details", requireAuth, requireWorkspace, async (req, res) => {
     const nextStart = wStart.add(7, "day").startOf("day");
     const currentWeekStart = getCurrentWeek(dayjs(), weekStartDayOfWeek).start;
     const nextDisabled = nextStart.isAfter(currentWeekStart);
+
+    // Persist selected week start in a session cookie so the main screen reflects it
+    try {
+        const isProd = process.env.NODE_ENV === "production";
+        res.cookie("selectedWeekStart", wStartStr, {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: isProd,
+        });
+    } catch (_e) { /* noop */ }
 
     const snap = await db
         .collection("purchases")

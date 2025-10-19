@@ -160,3 +160,15 @@ input:focus, textarea:focus, select:focus { outline: 2px solid #0ea5e9; }
 @media (max-width: 380px) {
     .hidden-sm { display: none; }
 }
+
+/* Floating actions on details screen */
+.floating-actions {
+    position: sticky;
+    bottom: 12px;
+    background: rgba(17,24,39,0.8);
+    backdrop-filter: blur(6px);
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    padding: 10px 12px;
+    justify-content: space-between;
+}
