@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title><%= (typeof t === 'function' ? t('trash.title') : 'Trash') %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <style>
+        .trash-item { display:grid; grid-template-columns: 1fr auto auto; gap:8px; align-items:center; border:1px solid #334155; border-radius:10px; padding:10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="title"><%= (typeof t === 'function' ? t('trash.title') : 'Trash') %></h1>
+            <% if (!items || items.length === 0) { %>
+                <p class="subtle"><%= (typeof t === 'function' ? t('trash.empty') : 'Nothing in trash') %></p>
+            <% } else { %>
+                <div style="display:grid; gap:8px;">
+                    <% items.forEach(function(item){ %>
+                        <div class="trash-item">
+                            <div>
+                                <div style="font-weight:600"><%= (Number(item.amount) || 0).toFixed(2) %> <%= currencyCode %></div>
+                                <div class="subtle"><%= item.date %> — <%= item.description || '—' %></div>
+                            </div>
+                            <form action="/restore/<%= item.id %>" method="post" style="margin:0">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button class="btn secondary" type="submit"><%= (typeof t === 'function' ? t('trash.restore') : 'Restore') %></button>
+                            </form>
+                            <form action="/permadelete/<%= item.id %>" method="post" style="margin:0" onsubmit="return confirm('<%= (typeof t === 'function' ? t('trash.confirm_delete') : 'Delete permanently?') %>')">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button class="btn" type="submit"><%= (typeof t === 'function' ? t('trash.delete_permanently') : 'Delete permanently') %></button>
+                            </form>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+            <div class="actions" style="margin-top:16px">
+                <a class="btn secondary" href="/"><%= (typeof t === 'function' ? t('trash.back') : 'Back') %></a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+

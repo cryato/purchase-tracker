@@ -19,6 +19,7 @@
 				<button id="burger" class="icon-button" aria-haspopup="menu" aria-expanded="false" title="<%= t('app.menu.menu') %>">☰</button>
 				<div id="menu" class="menu hidden" role="menu" aria-labelledby="burger" aria-hidden="true" inert>
 					<a class="menu-item" href="/settings" role="menuitem"><%= t('app.menu.settings') %></a>
+					<a class="menu-item" href="/trash" role="menuitem"><%= (typeof t === 'function' ? t('trash.show_trash') : 'Show trash') %></a>
 					<form action="/sessionLogout" method="post" style="display:block" role="none">
 						<input type="hidden" name="_csrf" value="<%= csrfToken %>">
 						<button class="menu-item" type="submit" role="menuitem"><%= t('app.menu.logout') %></button>

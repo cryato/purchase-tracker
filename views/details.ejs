@@ -38,10 +38,10 @@
 								<div style="font-weight:600"><%= (item.amount).toFixed(2) %> <%= currencyCode %></div>
 								<div class="subtle"><%= item.description || "—" %></div>
 							</div>
-							<a class="btn secondary" href="/edit/<%= item.id %>"><%= t('details.edit') %></a>
-						<form action="/delete/<%= item.id %>" method="post" style="margin:0">
+					<a class="btn secondary" href="/edit/<%= item.id %>"><%= t('details.edit') %></a>
+					<form action="/delete/<%= item.id %>" method="post" style="margin:0">
 							<input type="hidden" name="_csrf" value="<%= csrfToken %>">
-								<button class="btn" type="submit"><%= t('details.delete') %></button>
+							<button class="btn" type="submit"><%= t('details.delete') %></button>
 							</form>
 						</div>
 					<% }) %>

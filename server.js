@@ -282,7 +282,9 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         .where("date", ">=", startStr)
         .where("date", "<=", endStr)
         .get();
-    const monthlyPurchases = monthSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const monthlyPurchases = monthSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => !p.deleted);
     const spent = sumPurchasesInRange(monthlyPurchases, start, end);
     const budgetLeft = monthlyBudget - spent;
 
@@ -307,7 +309,9 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         .where("date", ">=", wStartStr)
         .where("date", "<=", wEndStr)
         .get();
-    const weeklyPurchases = weekSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const weeklyPurchases = weekSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => !p.deleted);
     const dynamicBigThreshold = (typeof wsWeeklyBudget === "number" ? wsWeeklyBudget : 0) * 0.25;
     const weeklySpentDetailed = sumWeeklyPurchasesDetailed(weeklyPurchases, wStart, wEnd, dynamicBigThreshold);
     const weeklySpentTotal = weeklySpentDetailed.total;
@@ -432,6 +436,7 @@ app.post("/spend", requireAuth, requireWorkspace, async (req, res) => {
             currency: req.workspace.currency || currencyCode,
             description,
             rejected: false,
+            deleted: false,
             date,
             createdByUid: req.user.uid,
             createdAt: now,
@@ -484,6 +489,7 @@ app.get("/details", requireAuth, requireWorkspace, async (req, res) => {
     const byDateMap = new Map();
     for (const d of snap.docs) {
         const p = { id: d.id, ...d.data() };
+        if (p.deleted) continue;
         const key = p.date;
         if (!byDateMap.has(key)) byDateMap.set(key, []);
         byDateMap.get(key).push(p);
@@ -559,8 +565,70 @@ app.post("/edit/:id", requireAuth, requireWorkspace, async (req, res) => {
     res.redirect("/details");
 });
 
-// Delete purchase
+// Soft delete purchase
 app.post("/delete/:id", requireAuth, requireWorkspace, async (req, res) => {
+    const id = req.params.id;
+    try {
+        const docRef = db.collection("purchases").doc(id);
+        const doc = await docRef.get();
+        if (doc.exists && doc.data().workspaceId === req.workspace.id) {
+            await docRef.update({
+                deleted: true,
+                deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                deletedByUid: req.user.uid,
+            });
+        }
+    } catch (_e) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to delete purchase", _e);
+    }
+    res.redirect("/details");
+});
+
+// Trash view (show soft-deleted purchases)
+app.get("/trash", requireAuth, requireWorkspace, async (req, res) => {
+    try {
+        const snap = await db
+            .collection("purchases")
+            .where("workspaceId", "==", req.workspace.id)
+            .where("deleted", "==", true)
+            .orderBy("date", "desc")
+            .limit(500)
+            .get();
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const wsCurrency = (req.workspace && req.workspace.currency) || currencyCode;
+        res.render("trash", { user: req.user, items, currencyCode: wsCurrency });
+    } catch (_e) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to load trash", _e);
+        res.render("trash", { user: req.user, items: [], currencyCode: req.workspace.currency || currencyCode });
+    }
+});
+
+// Restore soft-deleted purchase
+app.post("/restore/:id", requireAuth, requireWorkspace, async (req, res) => {
+    const id = req.params.id;
+    try {
+        const docRef = db.collection("purchases").doc(id);
+        const doc = await docRef.get();
+        if (doc.exists && doc.data().workspaceId === req.workspace.id) {
+            await docRef.update({
+                deleted: false,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                restoredAt: admin.firestore.FieldValue.serverTimestamp(),
+                restoredByUid: req.user.uid,
+            });
+        }
+    } catch (_e) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to restore purchase", _e);
+    }
+    res.redirect("/trash");
+});
+
+// Permanently delete purchase
+app.post("/permadelete/:id", requireAuth, requireWorkspace, async (req, res) => {
     const id = req.params.id;
     try {
         const docRef = db.collection("purchases").doc(id);
@@ -570,9 +638,9 @@ app.post("/delete/:id", requireAuth, requireWorkspace, async (req, res) => {
         }
     } catch (_e) {
         // eslint-disable-next-line no-console
-        console.error("Failed to delete purchase", _e);
+        console.error("Failed to permanently delete purchase", _e);
     }
-    res.redirect("/details");
+    res.redirect("/trash");
 });
 
 app.listen(PORT, () => {

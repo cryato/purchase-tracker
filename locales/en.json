@@ -78,6 +78,15 @@
     "language": "Language",
     "cancel": "Cancel",
     "create": "Create workspace"
+  },
+  "trash": {
+    "title": "Trash",
+    "show_trash": "Show trash",
+    "empty": "Nothing in trash",
+    "restore": "Restore",
+    "delete_permanently": "Delete permanently",
+    "confirm_delete": "Delete permanently?",
+    "back": "Back"
   }
 }
 

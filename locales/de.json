@@ -78,6 +78,15 @@
     "language": "Sprache",
     "cancel": "Abbrechen",
     "create": "Arbeitsbereich erstellen"
+  },
+  "trash": {
+    "title": "Papierkorb",
+    "show_trash": "Papierkorb anzeigen",
+    "empty": "Papierkorb ist leer",
+    "restore": "Wiederherstellen",
+    "delete_permanently": "Endgültig löschen",
+    "confirm_delete": "Endgültig löschen?",
+    "back": "Zurück"
   }
 }
 
