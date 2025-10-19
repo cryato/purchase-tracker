@@ -47,6 +47,13 @@ body {
 }
 .btn.secondary { background: transparent; color: #e2e8f0; }
 
+/* Disabled button state */
+.btn[disabled], .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(40%);
+}
+
 /* Equal-sized, extra-bold hero lines on the main screen */
 .hero-line {
 	font-size: 38px;
@@ -147,3 +154,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid #0ea5e9; }
 
 /* Ensure hidden state wins over .menu display */
 .menu.hidden { display: none; }
+
+/* Responsive helpers */
+.hidden-sm { display: inline; }
+@media (max-width: 380px) {
+    .hidden-sm { display: none; }
+}

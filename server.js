@@ -433,10 +433,24 @@ app.post("/spend", requireAuth, requireWorkspace, async (req, res) => {
 // Daily details (current week)
 app.get("/details", requireAuth, requireWorkspace, async (req, res) => {
     const wsCurrency = (req.workspace && req.workspace.currency) || currencyCode;
-    const today = dayjs();
-    const { start: wStart, end: wEnd } = getCurrentWeek(today, weekStartDayOfWeek);
+    // Parse requested week start (YYYY-MM-DD). If invalid/missing, use today.
+    const startParam = ((req.query && req.query.start) || "").toString().trim();
+    let baseDate = dayjs();
+    if (startParam) {
+        const parsed = dayjs(startParam);
+        if (parsed.isValid()) baseDate = parsed;
+    }
+
+    const { start: wStart, end: wEnd } = getCurrentWeek(baseDate, weekStartDayOfWeek);
     const wStartStr = wStart.format("YYYY-MM-DD");
     const wEndStr = wEnd.format("YYYY-MM-DD");
+
+    // Compute prev/next week boundaries and disable next if in the future relative to current week
+    const prevStart = wStart.subtract(7, "day").startOf("day");
+    const nextStart = wStart.add(7, "day").startOf("day");
+    const currentWeekStart = getCurrentWeek(dayjs(), weekStartDayOfWeek).start;
+    const nextDisabled = nextStart.isAfter(currentWeekStart);
+
     const snap = await db
         .collection("purchases")
         .where("workspaceId", "==", req.workspace.id)
@@ -465,7 +479,21 @@ app.get("/details", requireAuth, requireWorkspace, async (req, res) => {
             };
         });
 
-    res.render("details", { user: req.user, days, currencyCode: wsCurrency });
+    // Human week range for title: if same month use "D-D MMMM", else "D MMM - D MMM"
+    const sameMonth = wStart.month() === wEnd.month() && wStart.year() === wEnd.year();
+    const weekRangeHuman = sameMonth
+        ? `${wStart.format("D")}-${wEnd.format("D")} ${wEnd.format("MMMM")}`
+        : `${wStart.format("D MMM")} - ${wEnd.format("D MMM")}`;
+
+    res.render("details", {
+        user: req.user,
+        days,
+        currencyCode: wsCurrency,
+        weekRangeHuman,
+        prevUrl: `/details?start=${prevStart.format("YYYY-MM-DD")}`,
+        nextUrl: `/details?start=${nextStart.format("YYYY-MM-DD")}`,
+        nextDisabled,
+    });
 });
 
 // Edit purchase page

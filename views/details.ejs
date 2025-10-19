@@ -9,7 +9,15 @@
 <body>
 	<div class="container">
 		<div class="card">
-			<h1 class="title">This week</h1>
+			<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+				<a class="btn secondary" href="<%= prevUrl %>">◀︎ <span class="hidden-sm">Previous week</span></a>
+				<h1 class="title" style="margin:0; text-align:center; flex:1;">Week of <%= weekRangeHuman %></h1>
+				<% if (nextDisabled) { %>
+					<button class="btn secondary" disabled title="Next week is in the future">Next week ▶︎</button>
+				<% } else { %>
+					<a class="btn secondary" href="<%= nextUrl %>"><span class="hidden-sm">Next week</span> ▶︎</a>
+				<% } %>
+			</div>
 			<% if (days.length === 0) { %>
 				<p class="subtle">No purchases made — week started!</p>
 			<% } %>
