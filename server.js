@@ -331,6 +331,12 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
     }
     const statusLine = `${bigCount} big (🌚) + ${smallCount} small (🌝) purchases — ${statusTail}${overBudgetExplanation}`;
 
+    // Human week range for title: if same month use "D-D MMMM", else "D MMM - D MMM"
+    const sameMonth = wStart.month() === wEnd.month() && wStart.year() === wEnd.year();
+    const weekRangeHuman = sameMonth
+        ? `${wStart.format("D")}-${wEnd.format("D")} ${wEnd.format("MMMM")}`
+        : `${wStart.format("D MMM")} - ${wEnd.format("D MMM")}`;
+
     res.render("index", {
         user: req.user,
         budgetLeft,
@@ -359,6 +365,7 @@ app.get("/", requireAuth, requireWorkspace, async (req, res) => {
         firstRowDevils,
         weeklyStatusLine: statusLine,
         weeklyAllowedByTodayNet: weeklyAllowedByTodayNet,
+        weekRangeHuman,
     });
 });
 
