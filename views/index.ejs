@@ -15,7 +15,12 @@
 <body>
 	<div class="container">
 		<div style="display:flex; justify-content:flex-end; margin: 8px 0; gap:8px; align-items:center; position:relative;">
-			<% if (user) { %>
+			<% if (publicMode) { %>
+				<button id="burger" class="icon-button" aria-haspopup="menu" aria-expanded="false" title="<%= t('app.menu.menu') %>">☰</button>
+				<div id="menu" class="menu hidden" role="menu" aria-labelledby="burger" aria-hidden="true" inert>
+					<a class="menu-item" href="/login" role="menuitem"><%= t('app.menu.login') %></a>
+				</div>
+			<% } else if (user) { %>
 				<button id="burger" class="icon-button" aria-haspopup="menu" aria-expanded="false" title="<%= t('app.menu.menu') %>">☰</button>
 				<div id="menu" class="menu hidden" role="menu" aria-labelledby="burger" aria-hidden="true" inert>
 					<a class="menu-item" href="/settings" role="menuitem"><%= t('app.menu.settings') %></a>
