@@ -239,8 +239,9 @@ app.post("/auth/email-link/start", async (req, res) => {
         const forwardedProto = (req.headers["x-forwarded-proto"] || "").toString().split(",")[0].trim();
         const proto = (req.secure || forwardedProto === "https") ? "https" : "http";
         const host = req.headers.host || req.get("host") || req.hostname;
+        const continueUrl = `${proto}://${host}/auth/email-link/callback?email=${encodeURIComponent(email)}`;
         const actionSettings = {
-            url: `${proto}://${host}/auth/email-link/callback`,
+            url: continueUrl,
             handleCodeInApp: true,
         };
         const link = await admin.auth().generateSignInWithEmailLink(email, actionSettings);
@@ -270,7 +271,7 @@ app.post("/auth/email-link/send", async (req, res) => {
             const host = req.headers.host || req.get("host") || req.hostname;
             handlerBase = `${proto}://${host}`;
         }
-        const continueUrl = `${handlerBase}/auth/email-link/callback`;
+        const continueUrl = `${handlerBase}/auth/email-link/callback?email=${encodeURIComponent(email)}`;
 
         // Generate the link server-side via Admin (guarantees we get the exact oob code link)
         const link = await admin.auth().generateSignInWithEmailLink(email, { url: continueUrl, handleCodeInApp: true });
