@@ -61,6 +61,14 @@
     "title": "Anmelden oder Konto erstellen",
     "back": "Zurück"
   },
+  "auth": {
+    "login": {
+      "continue": "Mit Supabase fortfahren"
+    },
+    "errors": {
+      "generic": "Authentifizierung fehlgeschlagen. Bitte erneut versuchen."
+    }
+  },
   "settings": {
     "title": "Einstellungen",
     "weekly_budget": "Wöchentliches Budget",

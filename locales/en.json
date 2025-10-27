@@ -61,6 +61,14 @@
     "title": "Sign in or create account",
     "back": "Back"
   },
+  "auth": {
+    "login": {
+      "continue": "Continue with Supabase"
+    },
+    "errors": {
+      "generic": "Authentication failed. Please try again."
+    }
+  },
   "settings": {
     "title": "Settings",
     "weekly_budget": "Weekly budget",

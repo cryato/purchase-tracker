@@ -61,12 +61,20 @@
     "title": "Войди или создай аккаунт",
     "back": "Назад"
   },
+  "auth": {
+    "login": {
+      "continue": "Продолжить через Supabase"
+    },
+    "errors": {
+      "generic": "Не удалось войти. Попробуйте ещё раз."
+    }
+  },
   "settings": {
     "title": "Настройки",
     "weekly_budget": "Недельный бюджет",
     "currency_code": "Код валюты",
     "language": "Язык",
-    "cancel": "Отмена",
+    "cancel": "Назад",
     "save": "Сохранить",
     "logout": "Выйти",
     "public_link_title": "Публичная ссылка (только просмотр)",
