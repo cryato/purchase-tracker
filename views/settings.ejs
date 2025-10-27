@@ -59,7 +59,7 @@
                 </div>
             <% } %>
             <hr style="border-color:#1f2937; margin:16px 0" />
-			<form action="/sessionLogout" method="post">
+			<form action="/auth/logout" method="post">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 				<button class="btn secondary" type="submit"><%= t('settings.logout') %></button>
             </form>

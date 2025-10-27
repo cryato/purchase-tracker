@@ -10,9 +10,11 @@ require("dayjs/locale/de");
 const { createTranslator, detectLanguage, getSupportedLanguages, supportedLanguageCodes, formatWeekRangeHuman, formatDayMonthLong } = require("./utils/i18n");
 const cookieParser = require("cookie-parser");
 const csrf = require("csurf");
+const helmet = require("helmet");
 const admin = require("firebase-admin");
 require("dotenv").config();
 const { budgetStartDay, monthlyBudget, currencyCode, weeklyBudget, weekStartDayOfWeek, bigPurchaseThreshold } = require("./config");
+const { getSupabase } = require("./utils/supabase");
 const { getCurrentCycle, sumPurchasesInRange, formatCurrency, computeAllowanceToDate, getCurrentWeek, computeWeeklyAllowanceToDate, sumWeeklyPurchasesDetailed } = require("./utils/budget");
 
 const app = express();
@@ -134,6 +136,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cookieParser());
+app.use(helmet());
 
 // CSRF protection via cookie; expose token to templates
 app.use(csrf({ cookie: true }));
@@ -151,17 +154,18 @@ app.use((req, res, next) => {
     next();
 });
 
-// Attach user from Firebase session cookie if present
-app.use(async (req, _res, next) => {
-    const sessionCookie = (req.cookies && req.cookies.session) || "";
-    if (!sessionCookie) return next();
+// Attach user from Supabase session (httpOnly cookies managed by @supabase/ssr)
+app.use(async (req, res, next) => {
     try {
-        const decoded = await admin.auth().verifySessionCookie(sessionCookie, true);
-        req.user = decoded;
-        res.locals.user = decoded;
-    } catch (_e) {
-        // ignore invalid/expired cookie
-    }
+        const supabase = getSupabase(req, res);
+        const { data } = await supabase.auth.getUser();
+        const supaUser = data && data.user;
+        if (supaUser) {
+            // Make it compatible with existing code expecting uid
+            req.user = Object.assign({ uid: supaUser.id }, supaUser);
+            res.locals.user = req.user;
+        }
+    } catch (_e) { /* ignore */ }
     next();
 });
 
@@ -188,7 +192,7 @@ function requireAuth(req, res, next) {
 // Auth routes (public)
 app.get("/login", (req, res) => {
     if (req.user) return res.redirect("/");
-    res.render("login");
+    res.render("login", { query: req.query || {} });
 });
 
 app.post("/sessionLogin", async (req, res) => {
@@ -212,10 +216,8 @@ app.post("/sessionLogin", async (req, res) => {
     }
 });
 
-app.post("/sessionLogout", (req, res) => {
-    res.clearCookie("session");
-    res.redirect("/login");
-});
+// Mount Supabase auth routes
+app.use("/auth", require("./routes/auth"));
 
 // Workspace setup routes
 app.get("/setup-workspace", requireAuth, (req, res) => {

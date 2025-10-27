@@ -61,6 +61,21 @@
     "title": "Sign in or create account",
     "back": "Back"
   },
+  "auth": {
+    "login": {
+      "continue": "Continue with Supabase"
+    },
+    "email": {
+      "button": "Continue with email",
+      "title": "Sign in with email",
+      "label": "Email address",
+      "send": "Send magic link",
+      "sent": "Check your email for a sign-in link"
+    },
+    "errors": {
+      "generic": "Authentication failed. Please try again."
+    }
+  },
   "settings": {
     "title": "Settings",
     "weekly_budget": "Weekly budget",

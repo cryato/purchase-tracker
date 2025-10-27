@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+	<title><%= t('auth.email.title') %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <meta name="theme-color" content="#0f172a">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="title"><%= t('auth.email.title') %></h1>
+            <% if (query && query.e) { %>
+                <p class="error"><%= t('auth.errors.generic') %></p>
+            <% } %>
+            <form action="/auth/email" method="post">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div>
+                    <label for="email"><%= t('auth.email.label') %></label>
+                    <input id="email" name="email" type="email" required />
+                </div>
+                <div class="actions" style="margin-top:16px; display:flex; gap:8px">
+                    <a class="btn secondary" href="/login"><%= t('login.back') %></a>
+                    <button class="btn" type="submit"><%= t('auth.email.send') %></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+
+

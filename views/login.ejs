@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 	<title><%= t('login.title') %></title>
     <link rel="stylesheet" href="/styles.css" />
-    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css" />
-    <meta name="csrf-token" content="<%= csrfToken %>">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f172a">
@@ -15,64 +13,19 @@
     <div class="container">
         <div class="card">
 			<h1 class="title"><%= t('login.title') %></h1>
-            <div id="firebaseui-auth-container"></div>
-            <div class="actions" style="margin-top:16px">
-				<a class="btn secondary" href="/"><%= t('login.back') %></a>
+            <% if (query && query.sent) { %>
+                <p class="success"><%= t('auth.email.sent') %></p>
+            <% } else if (query && query.e) { %>
+                <p class="error"><%= t('auth.errors.generic') %></p>
+            <% } %>
+            <div class="actions" style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap">
+                <a class="btn" href="/auth/login/google"><%= t('auth.login.continue') %></a>
+                <a class="btn" href="/auth/email"><%= t('auth.email.button') %></a>
+                <a class="btn secondary" href="/"><%= t('login.back') %></a>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDKs (compat for FirebaseUI) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
-    <script>
-        // TODO: replace with your Firebase web config
-        const firebaseConfig = {
-            apiKey: "AIzaSyAnKpw39f9CyY0o7NJLoAJ56CFhmdxVEHM",
-            authDomain: "savings-saas.firebaseapp.com",
-            projectId: "savings-saas",
-            storageBucket: "savings-saas.firebasestorage.app",
-            messagingSenderId: "880769861429",
-            appId: "1:880769861429:web:dcdd3f1c70a722f5b42e7c"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const ui = new firebaseui.auth.AuthUI(firebase.auth());
-        ui.start('#firebaseui-auth-container', {
-            credentialHelper: firebaseui.auth.CredentialHelper.NONE,
-            signInFlow: 'popup',
-            signInOptions: [
-                {
-                    provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-                    signInMethod: firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD,
-                    requireDisplayName: false,
-                    disableSignUp: { status: false },
-                },
-                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-            ],
-            callbacks: {
-                signInSuccessWithAuthResult: async (authResult) => {
-                    const idToken = await authResult.user.getIdToken();
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-                    await fetch('/sessionLogin', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken,
-                        },
-                        body: JSON.stringify({ idToken }),
-                    });
-                    window.location.assign('/');
-                    return false;
-                },
-                signInFailure: function(error) {
-                    console.error('FirebaseUI sign-in failure:', error);
-                    alert(error && error.message ? error.message : 'Authentication failed.');
-                    return Promise.resolve();
-                },
-            },
-        });
-    </script>
 </body>
 </html>
 
