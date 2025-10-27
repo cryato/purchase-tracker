@@ -220,6 +220,7 @@ app.post("/sessionLogout", (req, res) => {
 
 // -------------------- Magic Link (server-side) --------------------
 const MAGIC_LINKS_ENABLED = String(process.env.MAGIC_LINKS_ENABLED || "false").toLowerCase() === "true";
+const BASE_URL = (process.env.BASE_URL || "").toString().replace(/\/$/, "");
 
 app.post("/auth/email-link/start", async (req, res) => {
     if (!MAGIC_LINKS_ENABLED) return res.status(404).send("Not found");
@@ -241,6 +242,52 @@ app.post("/auth/email-link/start", async (req, res) => {
         // eslint-disable-next-line no-console
         console.error("/auth/email-link/start failed:", e);
         res.status(500).send("Failed to generate link");
+    }
+});
+
+// Ask Firebase to SEND the email (EMAIL_LINK) with our BASE_URL as handler
+app.post("/auth/email-link/send", async (req, res) => {
+    if (!MAGIC_LINKS_ENABLED) return res.status(404).send("Not found");
+    try {
+        const rawEmail = ((req.body && req.body.email) || "").toString();
+        const email = rawEmail.trim();
+        if (!email || !email.includes("@")) return res.status(400).send("Invalid email");
+        const apiKey = process.env.FIREBASE_WEB_API_KEY;
+        if (!apiKey) return res.status(500).send("Missing API key");
+
+        // Prefer explicit BASE_URL; fall back to request host if missing
+        let handlerBase = BASE_URL;
+        if (!handlerBase) {
+            const forwardedProto = (req.headers["x-forwarded-proto"] || "").toString().split(",")[0].trim();
+            const proto = (req.secure || forwardedProto === "https") ? "https" : "http";
+            const host = req.headers.host || req.get("host") || req.hostname;
+            handlerBase = `${proto}://${host}`;
+        }
+        const continueUrl = `${handlerBase}/auth/email-link/callback`;
+
+        const payload = {
+            requestType: "EMAIL_SIGNIN",
+            email,
+            continueUrl,
+            canHandleCodeInApp: true,
+        };
+        const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}` , {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            // eslint-disable-next-line no-console
+            console.error("sendOobCode error:", data);
+            return res.status(400).send("Failed to send email");
+        }
+        // Show confirmation page
+        res.render("magic-sent", { email });
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("/auth/email-link/send failed:", e);
+        res.status(500).send("Failed to send email");
     }
 });
 
