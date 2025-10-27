@@ -65,6 +65,13 @@
     "login": {
       "continue": "Mit Supabase fortfahren"
     },
+    "email": {
+      "button": "Mit E‑Mail fortfahren",
+      "title": "Mit E‑Mail anmelden",
+      "label": "E‑Mail‑Adresse",
+      "send": "Magic Link senden",
+      "sent": "Prüfe deine E‑Mail auf den Anmeldelink"
+    },
     "errors": {
       "generic": "Authentifizierung fehlgeschlagen. Bitte erneut versuchen."
     }
