@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 	<title><%= t('login.title') %></title>
     <link rel="stylesheet" href="/styles.css" />
-    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css" />
+    <!-- FirebaseUI removed: self-hosted, email-only flow -->
     <meta name="csrf-token" content="<%= csrfToken %>">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,64 +15,26 @@
     <div class="container">
         <div class="card">
 			<h1 class="title"><%= t('login.title') %></h1>
-            <div id="firebaseui-auth-container"></div>
+            <% if (process.env.MAGIC_LINKS_ENABLED && String(process.env.MAGIC_LINKS_ENABLED).toLowerCase() === 'true') { %>
+            <form method="POST" action="/auth/email-link/start" class="form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
+                <div class="actions" style="margin-top:16px">
+                    <button class="btn" type="submit">Get magic link</button>
+                    <a class="btn secondary" href="/"> <%= t('login.back') %> </a>
+                </div>
+            </form>
+            <% } else { %>
+            <p>Sign-in temporarily unavailable.</p>
             <div class="actions" style="margin-top:16px">
-				<a class="btn secondary" href="/"><%= t('login.back') %></a>
+                <a class="btn secondary" href="/"> <%= t('login.back') %> </a>
             </div>
+            <% } %>
         </div>
     </div>
 
-    <!-- Firebase SDKs (compat for FirebaseUI) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
-    <script>
-        // TODO: replace with your Firebase web config
-        const firebaseConfig = {
-            apiKey: "AIzaSyAnKpw39f9CyY0o7NJLoAJ56CFhmdxVEHM",
-            authDomain: "savings-saas.firebaseapp.com",
-            projectId: "savings-saas",
-            storageBucket: "savings-saas.firebasestorage.app",
-            messagingSenderId: "880769861429",
-            appId: "1:880769861429:web:dcdd3f1c70a722f5b42e7c"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const ui = new firebaseui.auth.AuthUI(firebase.auth());
-        ui.start('#firebaseui-auth-container', {
-            credentialHelper: firebaseui.auth.CredentialHelper.NONE,
-            signInFlow: 'popup',
-            signInOptions: [
-                {
-                    provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-                    signInMethod: firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD,
-                    requireDisplayName: false,
-                    disableSignUp: { status: false },
-                },
-                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-            ],
-            callbacks: {
-                signInSuccessWithAuthResult: async (authResult) => {
-                    const idToken = await authResult.user.getIdToken();
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-                    await fetch('/sessionLogin', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken,
-                        },
-                        body: JSON.stringify({ idToken }),
-                    });
-                    window.location.assign('/');
-                    return false;
-                },
-                signInFailure: function(error) {
-                    console.error('FirebaseUI sign-in failure:', error);
-                    alert(error && error.message ? error.message : 'Authentication failed.');
-                    return Promise.resolve();
-                },
-            },
-        });
-    </script>
+    <!-- No client Firebase SDK required for server-side auth flow -->
 </body>
 </html>
 

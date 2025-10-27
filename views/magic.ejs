@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Magic link</title>
+    <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="title">Magic link</h1>
+            <p>Copy this link and open it on the same device/browser:</p>
+            <p>
+                <input type="text" id="link" value="<%= link %>&email=<%= encodeURIComponent(email) %>" readonly style="width:100%" />
+            </p>
+            <div class="actions" style="margin-top:16px">
+                <button class="btn" id="copyBtn">Copy</button>
+                <a class="btn secondary" href="/login">Back</a>
+            </div>
+            <div id="qr" style="margin-top:16px;text-align:center"></div>
+        </div>
+    </div>
+
+    <script>
+    (function(){
+        var btn = document.getElementById('copyBtn');
+        var input = document.getElementById('link');
+        btn.addEventListener('click', function(){
+            input.select();
+            document.execCommand('copy');
+            btn.textContent = 'Copied!';
+            setTimeout(function(){ btn.textContent = 'Copy'; }, 1500);
+        });
+        // Tiny QR without external CDN: fallback to pure text if Canvas not available
+        // Minimal inline QR generator (micro, numeric/alphanumeric only). For full QR, consider local lib.
+        // For now, we skip QR complexity to avoid CDN; the link is visible and copyable.
+    })();
+    </script>
+</body>
+</html>
+
+

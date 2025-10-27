@@ -13,6 +13,7 @@ const csrf = require("csurf");
 const admin = require("firebase-admin");
 require("dotenv").config();
 const { budgetStartDay, monthlyBudget, currencyCode, weeklyBudget, weekStartDayOfWeek, bigPurchaseThreshold } = require("./config");
+const fetch = require("node-fetch");
 const { getCurrentCycle, sumPurchasesInRange, formatCurrency, computeAllowanceToDate, getCurrentWeek, computeWeeklyAllowanceToDate, sumWeeklyPurchasesDetailed } = require("./utils/budget");
 
 const app = express();
@@ -215,6 +216,78 @@ app.post("/sessionLogin", async (req, res) => {
 app.post("/sessionLogout", (req, res) => {
     res.clearCookie("session");
     res.redirect("/login");
+});
+
+// -------------------- Magic Link (server-side) --------------------
+const MAGIC_LINKS_ENABLED = String(process.env.MAGIC_LINKS_ENABLED || "false").toLowerCase() === "true";
+
+app.post("/auth/email-link/start", async (req, res) => {
+    if (!MAGIC_LINKS_ENABLED) return res.status(404).send("Not found");
+    try {
+        const rawEmail = ((req.body && req.body.email) || "").toString();
+        const email = rawEmail.trim();
+        if (!email || !email.includes("@")) return res.status(400).send("Invalid email");
+
+        const forwardedProto = (req.headers["x-forwarded-proto"] || "").toString().split(",")[0].trim();
+        const proto = (req.secure || forwardedProto === "https") ? "https" : "http";
+        const host = req.headers.host || req.get("host") || req.hostname;
+        const actionSettings = {
+            url: `${proto}://${host}/auth/email-link/callback`,
+            handleCodeInApp: true,
+        };
+        const link = await admin.auth().generateSignInWithEmailLink(email, actionSettings);
+        res.render("magic", { email, link });
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("/auth/email-link/start failed:", e);
+        res.status(500).send("Failed to generate link");
+    }
+});
+
+// Server-side finalize to avoid Google calls from RU clients
+app.get("/auth/email-link/callback", async (req, res) => {
+    if (!MAGIC_LINKS_ENABLED) return res.status(404).send("Not found");
+    try {
+        const oobCode = ((req.query && req.query.oobCode) || "").toString();
+        let email = ((req.query && req.query.email) || "").toString();
+        email = email.trim();
+        if (!oobCode) return res.status(400).send("Missing code");
+        if (!email) {
+            // Render a tiny page to capture email, then POST here
+            return res.render("magic-callback", { hasEmail: false, oobCode });
+        }
+
+        const apiKey = process.env.FIREBASE_WEB_API_KEY;
+        if (!apiKey) return res.status(500).send("Missing API key");
+        const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithEmailLink?key=${apiKey}` , {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, oobCode })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            // eslint-disable-next-line no-console
+            console.error("signInWithEmailLink error:", data);
+            return res.status(400).send("Auth failed");
+        }
+        const idToken = data && data.idToken;
+        if (!idToken) return res.status(400).send("Auth failed");
+
+        const expiresIn = 1000 * 60 * 60 * 24 * 5; // 5 days
+        const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
+        const isProd = process.env.NODE_ENV === "production";
+        res.cookie("session", sessionCookie, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: "lax",
+            maxAge: expiresIn,
+        });
+        res.redirect("/");
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("/auth/email-link/callback failed:", e);
+        res.status(400).send("Auth failed");
+    }
 });
 
 // Workspace setup routes

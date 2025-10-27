@@ -1,6 +1,6 @@
-# Purchase Tracker (Prototype)
+# Purchase Tracker
 
-Mobile-first Node.js prototype to track spontaneous purchases within a monthly budget cycle. No persistence yet (in-memory only).
+Mobile-first Node.js app to track spontaneous purchases within a monthly budget cycle. Uses Firebase Admin for persistence.
 
 ## Configure
 
@@ -18,8 +18,27 @@ npm run dev
 ```
 
 ## Pages
-- `/` shows remaining budget for the current cycle. Amount is masked as `***` until tapped.
-- `/spend` add a purchase with amount, date (defaults to today), and optional description.
+- `/` dashboard with remaining budget and weekly breakdown
+- `/details` weekly details
+- `/spend` add a purchase
+- `/settings` change budget, currency, language; manage public link
 
-## Notes
-- Data is stored in-memory for this prototype. Restarting the server clears purchases.
+## Auth
+
+Auth supports a magic-link (email link) flow fully handled on the server for regions where Google CDNs/APIs are blocked.
+
+When `MAGIC_LINKS_ENABLED=true`:
+
+- Login page shows an email-only form.
+- POST `/auth/email-link/start` generates a Firebase Email Link on the server and renders a page with the link you can copy or open.
+- GET `/auth/email-link/callback?oobCode=...&email=...` finalizes sign-in on the server (no client SDK), creates a Firebase Session Cookie, and redirects home.
+
+Environment variables:
+
+- `MAGIC_LINKS_ENABLED=true`
+- `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS` (for Admin SDK)
+- `FIREBASE_WEB_API_KEY` (Web API key for calling identitytoolkit from the server)
+
+Notes:
+
+- The app does not use the Firestore client web SDK; all reads/writes are via Admin SDK on the server and rendered with EJS.
