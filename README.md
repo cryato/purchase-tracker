@@ -38,6 +38,10 @@ Environment variables:
 - `MAGIC_LINKS_ENABLED=true`
 - `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS` (for Admin SDK)
 - `FIREBASE_WEB_API_KEY` (Web API key for calling identitytoolkit from the server)
+- `BASE_URL=https://your-domain.example` (used in links and email templates)
+- Optional Resend (to send emails from your domain):
+  - `RESEND_API_KEY=...`
+  - `RESEND_FROM=Your App <no-reply@yourdomain.example>`
 
 Notes:
 

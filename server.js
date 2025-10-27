@@ -14,6 +14,7 @@ const admin = require("firebase-admin");
 require("dotenv").config();
 const { budgetStartDay, monthlyBudget, currencyCode, weeklyBudget, weekStartDayOfWeek, bigPurchaseThreshold } = require("./config");
 const fetch = require("node-fetch");
+const { Resend } = require("resend");
 const { getCurrentCycle, sumPurchasesInRange, formatCurrency, computeAllowanceToDate, getCurrentWeek, computeWeeklyAllowanceToDate, sumWeeklyPurchasesDetailed } = require("./utils/budget");
 
 const app = express();
@@ -221,6 +222,12 @@ app.post("/sessionLogout", (req, res) => {
 // -------------------- Magic Link (server-side) --------------------
 const MAGIC_LINKS_ENABLED = String(process.env.MAGIC_LINKS_ENABLED || "false").toLowerCase() === "true";
 const BASE_URL = (process.env.BASE_URL || "").toString().replace(/\/$/, "");
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const RESEND_FROM = process.env.RESEND_FROM || "";
+let resendClient = null;
+if (RESEND_API_KEY) {
+    try { resendClient = new Resend(RESEND_API_KEY); } catch (_e) { /* noop */ }
+}
 
 app.post("/auth/email-link/start", async (req, res) => {
     if (!MAGIC_LINKS_ENABLED) return res.status(404).send("Not found");
@@ -255,7 +262,7 @@ app.post("/auth/email-link/send", async (req, res) => {
         const apiKey = process.env.FIREBASE_WEB_API_KEY;
         if (!apiKey) return res.status(500).send("Missing API key");
 
-        // Prefer explicit BASE_URL; fall back to request host if missing
+        // Build our handler URL which Firebase will redirect back to
         let handlerBase = BASE_URL;
         if (!handlerBase) {
             const forwardedProto = (req.headers["x-forwarded-proto"] || "").toString().split(",")[0].trim();
@@ -265,24 +272,39 @@ app.post("/auth/email-link/send", async (req, res) => {
         }
         const continueUrl = `${handlerBase}/auth/email-link/callback`;
 
-        const payload = {
-            requestType: "EMAIL_SIGNIN",
-            email,
-            continueUrl,
-            canHandleCodeInApp: true,
-        };
-        const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}` , {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
-            // eslint-disable-next-line no-console
-            console.error("sendOobCode error:", data);
-            return res.status(400).send("Failed to send email");
+        // Generate the link server-side via Admin (guarantees we get the exact oob code link)
+        const link = await admin.auth().generateSignInWithEmailLink(email, { url: continueUrl, handleCodeInApp: true });
+
+        // If Resend configured, email the link ourselves
+        if (resendClient && RESEND_FROM) {
+            try {
+                await resendClient.emails.send({
+                    from: RESEND_FROM,
+                    to: email,
+                    subject: "Your sign-in link",
+                    text: `Click to sign in: ${link}\n\nIf the link doesn't open, copy and paste into the same browser on this device.`,
+                    html: `<p>Click to sign in:</p><p><a href="${link}">${link}</a></p><p>If the link doesn't open, copy and paste it into the same browser on this device.</p>`,
+                });
+            } catch (mailErr) {
+                // eslint-disable-next-line no-console
+                console.error("Resend send error:", mailErr);
+                return res.status(500).send("Failed to send email");
+            }
+        } else {
+            // Fallback: use Identity Toolkit to send if Resend not configured
+            const payload = { requestType: "EMAIL_SIGNIN", email, continueUrl, canHandleCodeInApp: true };
+            const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}` , {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+                // eslint-disable-next-line no-console
+                console.error("sendOobCode error:", data);
+                return res.status(400).send("Failed to send email");
+            }
         }
-        // Show confirmation page
         res.render("magic-sent", { email });
     } catch (e) {
         // eslint-disable-next-line no-console
