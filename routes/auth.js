@@ -55,7 +55,7 @@ router.post("/email", async (req, res) => {
         const supabase = getSupabase(req, res);
         const { error } = await supabase.auth.signInWithOtp({
             email,
-            options: { emailRedirectTo: `${BASE_URL}/auth/callback` },
+            options: { emailRedirectTo: `${BASE_URL}/auth/callback`, shouldCreateUser: true },
         });
         if (error) return res.redirect("/auth/email?e=1");
         return res.redirect("/login?sent=1");
@@ -66,8 +66,15 @@ router.post("/email", async (req, res) => {
 
 router.get("/callback", async (req, res) => {
     const supabase = getSupabase(req, res);
-    const { error } = await supabase.auth.exchangeCodeForSession(req.originalUrl);
-    if (error) return res.redirect("/login?e=1");
+    const fullUrl = `${BASE_URL}${req.originalUrl}`;
+    const { error } = await supabase.auth.exchangeCodeForSession(fullUrl);
+    if (error) {
+        if (process.env.NODE_ENV !== "production") {
+            // eslint-disable-next-line no-console
+            console.error("/auth/callback exchange failed:", error);
+        }
+        return res.redirect("/login?e=1");
+    }
     res.redirect("/");
 });
 
