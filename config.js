@@ -14,8 +14,4 @@ module.exports = {
 	bigPurchaseThreshold: 120,
 	// ISO 4217 currency code, e.g., 'USD', 'EUR', 'GBP'
 	currencyCode: "ILS",
-	// Supabase configuration (read from environment)
-	SUPABASE_URL: process.env.SUPABASE_URL || "",
-	SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || "",
-	BASE_URL: process.env.BASE_URL || (process.env.NODE_ENV === "production" ? "" : "http://localhost:3000"),
 };
