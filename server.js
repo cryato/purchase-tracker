@@ -197,7 +197,7 @@ app.post("/sessionLogin", async (req, res) => {
     const idToken = (req.body && req.body.idToken) || "";
     if (!idToken) return res.status(400).json({ error: "missing idToken" });
     try {
-        const expiresIn = 1000 * 60 * 60 * 24 * 5; // 5 days
+        const expiresIn = 1000 * 60 * 60 * 24 * 30; // 30 days (1 month)
         const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
         const isProd = process.env.NODE_ENV === "production";
         res.cookie("session", sessionCookie, {
@@ -343,7 +343,7 @@ app.get("/auth/email-link/callback", async (req, res) => {
         const idToken = data && data.idToken;
         if (!idToken) return res.status(400).send("Auth failed");
 
-        const expiresIn = 1000 * 60 * 60 * 24 * 5; // 5 days
+        const expiresIn = 1000 * 60 * 60 * 24 * 30; // 30 days (1 month)
         const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
         const isProd = process.env.NODE_ENV === "production";
         res.cookie("session", sessionCookie, {
