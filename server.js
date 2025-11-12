@@ -318,17 +318,60 @@ app.post("/auth/email-link/send", async (req, res) => {
 app.get("/auth/email-link/callback", async (req, res) => {
     if (!MAGIC_LINKS_ENABLED) return res.status(404).send("Not found");
     try {
-        const oobCode = ((req.query && req.query.oobCode) || "").toString();
+        // Extract oobCode - Firebase may send it as 'oobCode' or 'link' parameter
+        let oobCode = ((req.query && req.query.oobCode) || "").toString();
+        // Decode URL-encoded oobCode
+        if (oobCode) {
+            try {
+                oobCode = decodeURIComponent(oobCode);
+            } catch (_e) {
+                // If decoding fails, use as-is
+            }
+        }
+        // If oobCode is in a link parameter, extract it
+        if (!oobCode && req.query && req.query.link) {
+            const link = req.query.link.toString();
+            const match = link.match(/[?&]oobCode=([^&]+)/);
+            if (match) {
+                try {
+                    oobCode = decodeURIComponent(match[1]);
+                } catch (_e) {
+                    oobCode = match[1];
+                }
+            }
+        }
+        
         let email = ((req.query && req.query.email) || "").toString();
+        // Decode URL-encoded email
+        try {
+            email = decodeURIComponent(email);
+        } catch (_e) {
+            // If decoding fails, use as-is
+        }
         email = email.trim();
-        if (!oobCode) return res.status(400).send("Missing code");
+        
+        // eslint-disable-next-line no-console
+        console.log("Magic link callback - oobCode:", oobCode ? "present" : "missing", "email:", email || "missing");
+        
+        if (!oobCode) {
+            // eslint-disable-next-line no-console
+            console.error("Missing oobCode in callback. Query params:", Object.keys(req.query || {}));
+            return res.status(400).send("Missing authentication code. Please request a new magic link.");
+        }
         if (!email) {
             // Render a tiny page to capture email, then POST here
             return res.render("magic-callback", { hasEmail: false, oobCode });
         }
 
         const apiKey = process.env.FIREBASE_WEB_API_KEY;
-        if (!apiKey) return res.status(500).send("Missing API key");
+        if (!apiKey) {
+            // eslint-disable-next-line no-console
+            console.error("FIREBASE_WEB_API_KEY not configured");
+            return res.status(500).send("Server configuration error");
+        }
+        
+        // eslint-disable-next-line no-console
+        console.log("Calling Firebase signInWithEmailLink API...");
         const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithEmailLink?key=${apiKey}` , {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -337,11 +380,15 @@ app.get("/auth/email-link/callback", async (req, res) => {
         const data = await resp.json();
         if (!resp.ok) {
             // eslint-disable-next-line no-console
-            console.error("signInWithEmailLink error:", data);
-            return res.status(400).send("Auth failed");
+            console.error("signInWithEmailLink API error:", JSON.stringify(data, null, 2));
+            return res.status(400).send(`Authentication failed: ${(data && data.error && data.error.message) || "Invalid or expired link"}`);
         }
         const idToken = data && data.idToken;
-        if (!idToken) return res.status(400).send("Auth failed");
+        if (!idToken) {
+            // eslint-disable-next-line no-console
+            console.error("No idToken in Firebase response:", JSON.stringify(data, null, 2));
+            return res.status(400).send("Authentication failed: No token received");
+        }
 
         const expiresIn = 1000 * 60 * 60 * 24 * 30; // 30 days (1 month)
         const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
@@ -355,8 +402,8 @@ app.get("/auth/email-link/callback", async (req, res) => {
         res.redirect("/");
     } catch (e) {
         // eslint-disable-next-line no-console
-        console.error("/auth/email-link/callback failed:", e);
-        res.status(400).send("Auth failed");
+        console.error("/auth/email-link/callback exception:", e);
+        res.status(500).send(`Authentication error: ${e.message || "Unknown error"}`);
     }
 });
 
