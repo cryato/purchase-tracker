@@ -197,7 +197,7 @@ app.post("/sessionLogin", async (req, res) => {
     const idToken = (req.body && req.body.idToken) || "";
     if (!idToken) return res.status(400).json({ error: "missing idToken" });
     try {
-        const expiresIn = 1000 * 60 * 60 * 24 * 30; // 30 days (1 month)
+        const expiresIn = 1000 * 60 * 60 * 24 * 14; // 14 days (2 weeks - Firebase maximum)
         const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
         const isProd = process.env.NODE_ENV === "production";
         res.cookie("session", sessionCookie, {
@@ -390,7 +390,7 @@ app.get("/auth/email-link/callback", async (req, res) => {
             return res.status(400).send("Authentication failed: No token received");
         }
 
-        const expiresIn = 1000 * 60 * 60 * 24 * 30; // 30 days (1 month)
+        const expiresIn = 1000 * 60 * 60 * 24 * 14; // 14 days (2 weeks - Firebase maximum)
         const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
         const isProd = process.env.NODE_ENV === "production";
         res.cookie("session", sessionCookie, {
